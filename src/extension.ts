@@ -6,6 +6,7 @@ import {
   Trace,
   TransportKind,
 } from 'vscode-languageclient/node';
+import { stopLanguageClient } from './clientStop';
 import {
   buildServerLaunch,
   initializationOptions,
@@ -73,7 +74,7 @@ async function stopClient(): Promise<void> {
     return;
   }
   try {
-    await previous.stop();
+    await stopLanguageClient(previous);
   } catch (err) {
     output?.warn(`stopping previous server: ${err instanceof Error ? err.message : String(err)}`);
   }
