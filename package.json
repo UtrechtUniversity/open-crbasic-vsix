@@ -27,7 +27,13 @@
           ".CR6",
           ".cr6",
           ".crb",
-          ".CRB"
+          ".CRB",
+          ".CR1X",
+          ".cr1x",
+          ".CR300",
+          ".cr300",
+          ".CR350",
+          ".cr350"
         ],
         "configuration": "./language-configuration.json"
       }

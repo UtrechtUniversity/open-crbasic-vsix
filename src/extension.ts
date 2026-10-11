@@ -6,6 +6,7 @@ import {
   Trace,
   TransportKind,
 } from 'vscode-languageclient/node';
+import { canNotify, planConfigurationChange } from './configChange';
 import { stopLanguageClient } from './clientStop';
 import {
   buildServerLaunch,
@@ -22,6 +23,7 @@ const RESTART_KEYS = [
   `${SECTION}.serverEnv`,
 ];
 const TRACE_KEY = `${SECTION}.trace.server`;
+const CONFIGURATION_NOTIFICATION = 'workspace/didChangeConfiguration';
 
 let output: vscode.LogOutputChannel | undefined;
 let client: LanguageClient | undefined;
@@ -34,10 +36,19 @@ export function activate(context: vscode.ExtensionContext): void {
     output,
     vscode.commands.registerCommand(`${SECTION}.restartServer`, () => restartClient()),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (RESTART_KEYS.some((key) => event.affectsConfiguration(key))) {
+      const plan = planConfigurationChange({
+        restartKeys: RESTART_KEYS.some((key) => event.affectsConfiguration(key)),
+        section: event.affectsConfiguration(SECTION),
+        trace: event.affectsConfiguration(TRACE_KEY),
+      });
+      if (plan.restart) {
         void restartClient();
-      } else if (event.affectsConfiguration(TRACE_KEY)) {
+      }
+      if (plan.applyTrace) {
         void applyTrace();
+      }
+      if (plan.notify) {
+        void notifySettings();
       }
     }),
   );
@@ -91,7 +102,8 @@ function createClient(): LanguageClient {
   };
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file', language: LANGUAGE_ID }],
-    synchronize: { configurationSection: SECTION },
+    // No `synchronize.configurationSection`: the client's own sync would also notify a client that
+    // is being replaced (H-02). Changes reach the running client through notifySettings.
     // Read at each (re)start, so a restart always sends current settings.
     initializationOptions: () =>
       initializationOptions(readServerSettings(vscode.workspace.getConfiguration(SECTION))),
@@ -99,6 +111,19 @@ function createClient(): LanguageClient {
     traceOutputChannel: output,
   };
   return new LanguageClient(SECTION, SECTION, serverOptions, clientOptions);
+}
+
+// The server pulls its settings on each notification (`settings: null`), so none are sent here.
+async function notifySettings(): Promise<void> {
+  const current = client;
+  if (!current || !canNotify(current)) {
+    return;
+  }
+  try {
+    await current.sendNotification(CONFIGURATION_NOTIFICATION, { settings: null });
+  } catch (err) {
+    output?.warn(`sending settings change: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 async function applyTrace(): Promise<void> {
