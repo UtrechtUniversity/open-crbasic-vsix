@@ -1,0 +1,140 @@
+{
+  "name": "opencrbasic",
+  "displayName": "CRBasic (opencrbasic)",
+  "description": "CRBasic language support for CR6 programs, backed by the opencrbasic language server.",
+  "publisher": "opencrbasic-local",
+  "private": true,
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:crbasic"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "crbasic",
+        "aliases": [
+          "CRBasic"
+        ],
+        "extensions": [
+          ".CR6",
+          ".cr6",
+          ".crb",
+          ".CRB"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "opencrbasic.restartServer",
+        "title": "opencrbasic: Restart Server"
+      }
+    ],
+    "configuration": {
+      "title": "opencrbasic",
+      "properties": {
+        "opencrbasic.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Python interpreter that runs the opencrbasic language server. It needs the opencrbasic package and pygls (the lsp extra)."
+        },
+        "opencrbasic.serverArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "-m",
+            "opencrbasic.lsp"
+          ],
+          "description": "Arguments passed to pythonPath to start the language server."
+        },
+        "opencrbasic.serverEnv": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "Extra environment variables for the server process, for example PYTHONPATH pointing at a development checkout. These override inherited variables."
+        },
+        "opencrbasic.entries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*.CR6"
+          ],
+          "description": "Workspace-relative glob patterns of entry programs. Each entry is analyzed with its includes."
+        },
+        "opencrbasic.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Workspace-relative glob patterns removed from the entries."
+        },
+        "opencrbasic.logger": {
+          "type": "string",
+          "enum": [
+            "cr6",
+            "cr1000x",
+            "cr300",
+            "cr350"
+          ],
+          "default": "cr6",
+          "description": "Logger profile used to analyze entry programs."
+        },
+        "opencrbasic.encoding": {
+          "type": "string",
+          "default": "utf-8",
+          "description": "Text encoding used to read unsaved document content and files."
+        },
+        "opencrbasic.debounceMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "description": "Delay in milliseconds after the last edit before analysis starts."
+        },
+        "opencrbasic.analysisTimeoutMs": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 1,
+          "description": "Maximum time in milliseconds for one analysis before it is abandoned."
+        },
+        "opencrbasic.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace of client-server messages in the opencrbasic output channel."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test \"out/test/**/*.test.js\""
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/vscode": "1.95.0",
+    "typescript": "5.9.3"
+  }
+}
