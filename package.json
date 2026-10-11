@@ -49,6 +49,14 @@
       {
         "command": "opencrbasic.restartServer",
         "title": "opencrbasic: Restart Server"
+      },
+      {
+        "command": "opencrbasic.openCompilerOutput",
+        "title": "opencrbasic: Show Compiler Output"
+      },
+      {
+        "command": "opencrbasic.openTableFields",
+        "title": "opencrbasic: Show Table Fields"
       }
     ],
     "configuration": {
@@ -147,6 +155,11 @@
           "default": "",
           "description": "Directory holding the extracted CRBasic help (Instructions/*.htm and parameters/*.htm). A relative path is resolved against the first workspace folder. Empty: hover and signature help show no help text."
         },
+        "opencrbasic.inlayHints.parameterNames": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the parameter name before each argument of an instruction or function call (for example Dest: before the first VoltSe argument). It needs helpDirectory: with no help text there are no hints."
+        },
         "opencrbasic.trace.server": {
           "type": "string",
           "enum": [
@@ -158,6 +171,18 @@
           "description": "Trace of client-server messages in the opencrbasic output channel."
         }
       }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "opencrbasic.openCompilerOutput",
+          "when": "editorLangId == crbasic"
+        },
+        {
+          "command": "opencrbasic.openTableFields",
+          "when": "editorLangId == crbasic"
+        }
+      ]
     }
   },
   "scripts": {

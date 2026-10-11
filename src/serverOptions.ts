@@ -23,6 +23,7 @@ export interface ServerSettings {
   maxQueuedJobs: number;
   maxCacheMb: number;
   helpDirectory: string;
+  inlayHints: { parameterNames: boolean };
 }
 
 export function buildServerLaunch(cfg: LaunchSettings, baseEnv: NodeJS.ProcessEnv): LaunchCommand {
@@ -45,5 +46,6 @@ export function initializationOptions(cfg: ServerSettings): ServerSettings {
     maxQueuedJobs: cfg.maxQueuedJobs,
     maxCacheMb: cfg.maxCacheMb,
     helpDirectory: cfg.helpDirectory,
+    inlayHints: { parameterNames: cfg.inlayHints.parameterNames },
   };
 }

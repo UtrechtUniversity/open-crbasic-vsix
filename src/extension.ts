@@ -2,12 +2,21 @@ import * as vscode from 'vscode';
 import {
   LanguageClient,
   type LanguageClientOptions,
+  ExecuteCommandRequest,
   type ServerOptions,
   Trace,
   TransportKind,
 } from 'vscode-languageclient/node';
 import { canNotify, planConfigurationChange } from './configChange';
 import { stopLanguageClient } from './clientStop';
+import {
+  OUTPUT_COMMANDS,
+  OUTPUT_SCHEME,
+  type OutputKind,
+  buildOutputUri,
+  failureText,
+  parseOutputQuery,
+} from './outputCommands';
 import {
   buildServerLaunch,
   initializationOptions,
@@ -30,11 +39,61 @@ let client: LanguageClient | undefined;
 // Restarts are serialized so overlapping settings changes cannot start two servers.
 let restartQueue: Promise<void> = Promise.resolve();
 
+// Content of the read-only output documents: the server command's answer for the document named
+// in the uri, requested again whenever a command is run for it.
+const outputChanged = new vscode.EventEmitter<vscode.Uri>();
+const outputProvider: vscode.TextDocumentContentProvider = {
+  onDidChange: outputChanged.event,
+  async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+    const target = parseOutputQuery(uri.query);
+    if (!target) {
+      return '';
+    }
+    const command = OUTPUT_COMMANDS[target.kind];
+    const current = client;
+    if (!current || !current.isRunning()) {
+      return failureText(command, 'The language server is not running.');
+    }
+    try {
+      const text = await current.sendRequest(ExecuteCommandRequest.type, {
+        command: command.serverCommand,
+        arguments: [target.source],
+      });
+      return typeof text === 'string' ? text : '';
+    } catch (err) {
+      output?.warn(`${command.serverCommand}: ${err instanceof Error ? err.message : String(err)}`);
+      return failureText(command, err);
+    }
+  },
+};
+
+async function openOutput(kind: OutputKind): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== LANGUAGE_ID || editor.document.uri.scheme !== 'file') {
+    void vscode.window.showInformationMessage(
+      `${OUTPUT_COMMANDS[kind].title}: open a CRBasic file first.`,
+    );
+    return;
+  }
+  const virtual = vscode.Uri.parse(buildOutputUri(kind, editor.document.uri.toString()), true);
+  outputChanged.fire(virtual);
+  const document = await vscode.workspace.openTextDocument(virtual);
+  await vscode.window.showTextDocument(document, {
+    viewColumn: vscode.ViewColumn.Beside,
+    preserveFocus: true,
+    preview: true,
+  });
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel(SECTION, { log: true });
   context.subscriptions.push(
     output,
     vscode.commands.registerCommand(`${SECTION}.restartServer`, () => restartClient()),
+    vscode.workspace.registerTextDocumentContentProvider(OUTPUT_SCHEME, outputProvider),
+    ...(Object.keys(OUTPUT_COMMANDS) as OutputKind[]).map((kind) =>
+      vscode.commands.registerCommand(OUTPUT_COMMANDS[kind].clientCommand, () => openOutput(kind)),
+    ),
     vscode.workspace.onDidChangeConfiguration((event) => {
       const plan = planConfigurationChange({
         restartKeys: RESTART_KEYS.some((key) => event.affectsConfiguration(key)),
@@ -160,5 +219,6 @@ function readServerSettings(config: vscode.WorkspaceConfiguration): ServerSettin
     maxQueuedJobs: config.get<number>('maxQueuedJobs', 64),
     maxCacheMb: config.get<number>('maxCacheMb', 256),
     helpDirectory: config.get<string>('helpDirectory', ''),
+    inlayHints: { parameterNames: config.get<boolean>('inlayHints.parameterNames', true) },
   };
 }

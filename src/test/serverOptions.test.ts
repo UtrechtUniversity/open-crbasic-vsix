@@ -45,6 +45,7 @@ test('initializationOptions picks only the server keys', () => {
     maxQueuedJobs: 8,
     maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
+    inlayHints: { parameterNames: false },
   });
   assert.deepEqual(options, {
     entries: ['**/*.CR6'],
@@ -57,6 +58,7 @@ test('initializationOptions picks only the server keys', () => {
     maxQueuedJobs: 8,
     maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
+    inlayHints: { parameterNames: false },
   });
 });
 
@@ -72,6 +74,7 @@ test('initializationOptions drops client-only keys and copies lists', () => {
     maxQueuedJobs: 64,
     maxCacheMb: 256,
     helpDirectory: '',
+    inlayHints: { parameterNames: true },
     pythonPath: 'python3',
     serverArgs: ['-m', 'opencrbasic.lsp'],
   };
@@ -79,5 +82,7 @@ test('initializationOptions drops client-only keys and copies lists', () => {
   assert.equal('pythonPath' in options, false);
   assert.equal('serverArgs' in options, false);
   options.entries.push('b.CR6');
+  options.inlayHints.parameterNames = false;
   assert.deepEqual(input.entries, ['a.CR6']);
+  assert.equal(input.inlayHints.parameterNames, true);
 });
