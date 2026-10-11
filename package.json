@@ -32,6 +32,13 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "grammars": [
+      {
+        "language": "crbasic",
+        "scopeName": "source.crbasic",
+        "path": "./syntaxes/crbasic.tmLanguage.json"
+      }
+    ],
     "commands": [
       {
         "command": "opencrbasic.restartServer",

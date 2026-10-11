@@ -2,7 +2,7 @@
 
 A minimal VS Code client for the opencrbasic language server (`python -m opencrbasic.lsp`).
 It registers the `crbasic` language for CR6 programs and starts the server over stdio. It
-provides server diagnostics only. There is no syntax highlighting yet (planned for LSP-03).
+provides server diagnostics and syntax highlighting.
 
 ## Requirements
 
@@ -70,9 +70,16 @@ Use `Restart Server` (command `opencrbasic: Restart Server`) after changing the 
 Changes to `pythonPath`, `serverArgs` and `serverEnv` restart the server. The other settings are
 sent to the running server as configuration changes.
 
+## Highlighting
+
+`syntaxes/crbasic.tmLanguage.json` is a TextMate grammar generated from the CR6 instruction
+catalog by `opencrbasic/tools/gen_grammar.py`; do not edit it by hand (see `docs/lsp-api.md`,
+"Instruction catalog"). It highlights comments, strings, numbers, `#If` directives, keywords,
+instructions, built-in functions, predefined constants and operators. The names are the CR6
+ones, whatever `opencrbasic.logger` is set to. How it renders in VS Code has not been observed; that is a human check.
+
 ## Limitations
 
-- No TextMate grammar or highlighting yet. That is LSP-03.
 - The client shows server diagnostics only. Completion, hover, outline and other editing
   features are not implemented.
 - Launching inside VS Code has not been tested in the development container, because the VS
