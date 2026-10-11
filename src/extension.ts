@@ -156,6 +156,9 @@ function readServerSettings(config: vscode.WorkspaceConfiguration): ServerSettin
     encoding: config.get<string>('encoding', 'utf-8'),
     debounceMs: config.get<number>('debounceMs', 300),
     analysisTimeoutMs: config.get<number>('analysisTimeoutMs', 10000),
+    maxFileBytes: config.get<number>('maxFileBytes', 2097152),
+    maxQueuedJobs: config.get<number>('maxQueuedJobs', 64),
+    maxCacheMb: config.get<number>('maxCacheMb', 256),
     helpDirectory: config.get<string>('helpDirectory', ''),
   };
 }

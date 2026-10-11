@@ -41,6 +41,9 @@ test('initializationOptions picks only the server keys', () => {
     encoding: 'utf-8',
     debounceMs: 250,
     analysisTimeoutMs: 5000,
+    maxFileBytes: 4096,
+    maxQueuedJobs: 8,
+    maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
   });
   assert.deepEqual(options, {
@@ -50,6 +53,9 @@ test('initializationOptions picks only the server keys', () => {
     encoding: 'utf-8',
     debounceMs: 250,
     analysisTimeoutMs: 5000,
+    maxFileBytes: 4096,
+    maxQueuedJobs: 8,
+    maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
   });
 });
@@ -62,6 +68,9 @@ test('initializationOptions drops client-only keys and copies lists', () => {
     encoding: 'utf-8',
     debounceMs: 300,
     analysisTimeoutMs: 10000,
+    maxFileBytes: 2097152,
+    maxQueuedJobs: 64,
+    maxCacheMb: 256,
     helpDirectory: '',
     pythonPath: 'python3',
     serverArgs: ['-m', 'opencrbasic.lsp'],

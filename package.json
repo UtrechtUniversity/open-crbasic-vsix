@@ -124,6 +124,24 @@
           "minimum": 1,
           "description": "Maximum time in milliseconds for one analysis before it is abandoned."
         },
+        "opencrbasic.maxFileBytes": {
+          "type": "number",
+          "default": 2097152,
+          "minimum": 1,
+          "description": "Files larger than this many bytes are not analyzed. The entries that read such a file report a warning instead of diagnostics."
+        },
+        "opencrbasic.maxQueuedJobs": {
+          "type": "number",
+          "default": 64,
+          "minimum": 1,
+          "description": "Maximum number of entry programs analyzed at once. The others wait and run as slots free; none is dropped."
+        },
+        "opencrbasic.maxCacheMb": {
+          "type": "number",
+          "default": 256,
+          "minimum": 1,
+          "description": "Memory in megabytes for parsed programs kept for hover, completion and navigation. The least recently used program is dropped when it is exceeded."
+        },
         "opencrbasic.helpDirectory": {
           "type": "string",
           "default": "",

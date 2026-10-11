@@ -19,6 +19,9 @@ export interface ServerSettings {
   encoding: string;
   debounceMs: number;
   analysisTimeoutMs: number;
+  maxFileBytes: number;
+  maxQueuedJobs: number;
+  maxCacheMb: number;
   helpDirectory: string;
 }
 
@@ -38,6 +41,9 @@ export function initializationOptions(cfg: ServerSettings): ServerSettings {
     encoding: cfg.encoding,
     debounceMs: cfg.debounceMs,
     analysisTimeoutMs: cfg.analysisTimeoutMs,
+    maxFileBytes: cfg.maxFileBytes,
+    maxQueuedJobs: cfg.maxQueuedJobs,
+    maxCacheMb: cfg.maxCacheMb,
     helpDirectory: cfg.helpDirectory,
   };
 }
