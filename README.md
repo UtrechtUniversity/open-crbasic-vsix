@@ -71,8 +71,9 @@ Settings are declared in `package.json` and documented in section 3 of
 
 - `syntaxes/crbasic.tmLanguage.json` is generated from the CR6 catalog by `tools/gen_grammar.py`. Do
   not edit it by hand (`opencrbasic/docs/lsp-api.md`, "Generated TextMate grammar").
-- Rename, formatting and quick fixes are registered by the server (LSP-07-wire) and have not been run
-  in VS Code. Watched files are also untested in VS Code. See sections 5.10, 4 and 9 of
-  `opencrbasic/docs/lsp-user-guide.md`.
+- Rename, formatting, quick fixes and watched files were run in VS Code on macOS at API and protocol
+  level (provider commands, workspace edits, traces); visual checks such as the F2 box, the quick-fix
+  menu and toasts are still pending. Inlay hints, the output commands and the packaged `.vsix` have
+  no host record yet. See sections 5.10, 4, 8 and 9 of `opencrbasic/docs/lsp-user-guide.md`.
 - Only macOS has been tested in VS Code, at the revisions in section 8 of
   `opencrbasic/docs/lsp-user-guide.md`. Windows and Linux are untested.

@@ -8,7 +8,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node';
 import { canNotify, planConfigurationChange } from './configChange';
-import { stopLanguageClient } from './clientStop';
+import { ClientLifecycle } from './clientLifecycle';
 import {
   OUTPUT_COMMANDS,
   OUTPUT_SCHEME,
@@ -35,9 +35,18 @@ const TRACE_KEY = `${SECTION}.trace.server`;
 const CONFIGURATION_NOTIFICATION = 'workspace/didChangeConfiguration';
 
 let output: vscode.LogOutputChannel | undefined;
-let client: LanguageClient | undefined;
-// Restarts are serialized so overlapping settings changes cannot start two servers.
-let restartQueue: Promise<void> = Promise.resolve();
+const lifecycle = new ClientLifecycle<LanguageClient>({
+  create: createClient,
+  afterStart: () => applyTrace(),
+  onStartError: (err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    output?.error(`server failed to start: ${message}`);
+    void vscode.window.showErrorMessage(`opencrbasic: language server failed to start (${message})`);
+  },
+  onStopError: (err) => {
+    output?.warn(`stopping previous server: ${err instanceof Error ? err.message : String(err)}`);
+  },
+});
 
 // Content of the read-only output documents: the server command's answer for the document named
 // in the uri, requested again whenever a command is run for it.
@@ -50,7 +59,7 @@ const outputProvider: vscode.TextDocumentContentProvider = {
       return '';
     }
     const command = OUTPUT_COMMANDS[target.kind];
-    const current = client;
+    const current = lifecycle.client;
     if (!current || !current.isRunning()) {
       return failureText(command, 'The language server is not running.');
     }
@@ -114,40 +123,12 @@ export function activate(context: vscode.ExtensionContext): void {
   void restartClient();
 }
 
-export function deactivate(): Thenable<void> | undefined {
-  return stopClient();
+export function deactivate(): Thenable<void> {
+  return lifecycle.deactivate();
 }
 
 function restartClient(): Promise<void> {
-  restartQueue = restartQueue.then(replaceClient, replaceClient);
-  return restartQueue;
-}
-
-async function replaceClient(): Promise<void> {
-  await stopClient();
-  const next = createClient();
-  client = next;
-  try {
-    await next.start();
-    await applyTrace();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    output?.error(`server failed to start: ${message}`);
-    void vscode.window.showErrorMessage(`opencrbasic: language server failed to start (${message})`);
-  }
-}
-
-async function stopClient(): Promise<void> {
-  const previous = client;
-  client = undefined;
-  if (!previous) {
-    return;
-  }
-  try {
-    await stopLanguageClient(previous);
-  } catch (err) {
-    output?.warn(`stopping previous server: ${err instanceof Error ? err.message : String(err)}`);
-  }
+  return lifecycle.restart();
 }
 
 function createClient(): LanguageClient {
@@ -174,7 +155,7 @@ function createClient(): LanguageClient {
 
 // The server pulls its settings on each notification (`settings: null`), so none are sent here.
 async function notifySettings(): Promise<void> {
-  const current = client;
+  const current = lifecycle.client;
   if (!current || !canNotify(current)) {
     return;
   }
@@ -186,7 +167,7 @@ async function notifySettings(): Promise<void> {
 }
 
 async function applyTrace(): Promise<void> {
-  const current = client;
+  const current = lifecycle.client;
   if (!current) {
     return;
   }
