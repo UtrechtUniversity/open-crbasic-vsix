@@ -41,6 +41,7 @@ test('initializationOptions picks only the server keys', () => {
     encoding: 'utf-8',
     debounceMs: 250,
     analysisTimeoutMs: 5000,
+    helpDirectory: '../extracted_chm',
   });
   assert.deepEqual(options, {
     entries: ['**/*.CR6'],
@@ -49,6 +50,7 @@ test('initializationOptions picks only the server keys', () => {
     encoding: 'utf-8',
     debounceMs: 250,
     analysisTimeoutMs: 5000,
+    helpDirectory: '../extracted_chm',
   });
 });
 
@@ -60,6 +62,7 @@ test('initializationOptions drops client-only keys and copies lists', () => {
     encoding: 'utf-8',
     debounceMs: 300,
     analysisTimeoutMs: 10000,
+    helpDirectory: '',
     pythonPath: 'python3',
     serverArgs: ['-m', 'opencrbasic.lsp'],
   };

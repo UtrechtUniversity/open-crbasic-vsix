@@ -19,6 +19,7 @@ export interface ServerSettings {
   encoding: string;
   debounceMs: number;
   analysisTimeoutMs: number;
+  helpDirectory: string;
 }
 
 export function buildServerLaunch(cfg: LaunchSettings, baseEnv: NodeJS.ProcessEnv): LaunchCommand {
@@ -37,5 +38,6 @@ export function initializationOptions(cfg: ServerSettings): ServerSettings {
     encoding: cfg.encoding,
     debounceMs: cfg.debounceMs,
     analysisTimeoutMs: cfg.analysisTimeoutMs,
+    helpDirectory: cfg.helpDirectory,
   };
 }

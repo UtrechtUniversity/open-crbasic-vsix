@@ -118,6 +118,11 @@
           "minimum": 1,
           "description": "Maximum time in milliseconds for one analysis before it is abandoned."
         },
+        "opencrbasic.helpDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "Directory holding the extracted CRBasic help (Instructions/*.htm and parameters/*.htm). A relative path is resolved against the first workspace folder. Empty: hover and signature help show no help text."
+        },
         "opencrbasic.trace.server": {
           "type": "string",
           "enum": [
