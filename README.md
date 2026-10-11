@@ -1,27 +1,21 @@
 # opencrbasic VS Code client
 
-A minimal VS Code client for the opencrbasic language server (`python -m opencrbasic.lsp`).
-It registers the `crbasic` language for CR6 programs and starts the server over stdio. It
-provides server diagnostics and syntax highlighting.
+A VS Code client for the opencrbasic language server (`python -m opencrbasic.lsp`). It registers the
+`crbasic` language for CRBasic programs and starts the server over stdio. The server provides
+diagnostics, hover, completion, signature help, outline, folding, navigation, semantic tokens and
+the syntax highlighting of the CR6 catalog.
+
+Setup, every setting with its default, the feature list with its limits, the help directory and the
+host-tested status are in [the user guide](../docs/lsp-user-guide.md). Start there.
 
 ## Requirements
 
-- Node.js with npm (the build was checked with Node 22 and npm 10).
-- VS Code 1.95 or newer.
-- A Python 3.10+ environment with opencrbasic and pygls. From the repository's `opencrbasic/`
-  directory:
+- Node.js with npm (checked with Node 22 and npm 10) and VS Code 1.95 or newer.
+- A Python 3.10+ environment with opencrbasic and pygls: from `opencrbasic/`, `uv sync`. See
+  [the guide, section 2](../docs/lsp-user-guide.md#2-install-and-launch).
+- `opencrbasic.pythonPath` set to that environment's interpreter, as an absolute path.
 
-  ```bash
-  cd opencrbasic && uv sync
-  ```
-
-  `uv sync` installs the `dev` group, which includes pygls. For a runtime-only environment, use
-  `uv pip install -e ".[lsp]"` in an environment you manage yourself.
-
-- In VS Code settings, set `opencrbasic.pythonPath` to the interpreter of that environment, for
-  example `$HOME/.uv-envs/opencrbasic/bin/python` with `$HOME` expanded to an absolute path.
-
-## Build
+## Build and test
 
 ```bash
 cd opencrbasic/vscode
@@ -30,58 +24,30 @@ npm run compile
 npm test
 ```
 
-`npm test` compiles, then runs the plain `node:test` unit tests of the launch-argument builder
-and the settings mapping. They do not start VS Code.
+`npm test` compiles, then runs the `node:test` unit tests in `src/test/`: the launch-argument builder,
+the settings mapping, the configuration-change decisions and the client stop. They do not start VS Code.
 
 ## Development launch
 
-1. Open `opencrbasic/vscode/` as the VS Code workspace and run `npm run compile` (or
-   `npm run watch`).
-2. Press F5 to start the "Run Extension" configuration. It opens an Extension Development Host.
-3. Open a `.CR6` file in the host window.
+1. Open `opencrbasic/vscode/` in VS Code and run `npm run compile` (or `npm run watch`).
+2. Press F5 ("Run Extension"). This opens an Extension Development Host.
+3. Open a CRBasic file in the host window.
 
-When this client runs from a git worktree, the installed `opencrbasic` package may be the one in
-another checkout. Point the server at the sources of the checkout you are testing with
-`opencrbasic.serverEnv`:
-
-```json
-"opencrbasic.serverEnv": {
-  "PYTHONPATH": "<worktree>/opencrbasic/src"
-}
-```
-
-Use `Restart Server` (command `opencrbasic: Restart Server`) after changing the server code.
+When the interpreter imports `opencrbasic` from another checkout, for example a git worktree, set
+`opencrbasic.serverEnv` to `{"PYTHONPATH": "<worktree>/opencrbasic/src"}`. Run
+`opencrbasic: Restart Server` after changing server code.
 
 ## Settings
 
-| Setting | Default | Meaning |
-|---|---|---|
-| `opencrbasic.pythonPath` | `python3` | Interpreter that runs the server |
-| `opencrbasic.serverArgs` | `["-m", "opencrbasic.lsp"]` | Arguments after the interpreter |
-| `opencrbasic.serverEnv` | `{}` | Extra server environment variables (override inherited ones) |
-| `opencrbasic.entries` | `["**/*.CR6"]` | Workspace-relative entry program globs |
-| `opencrbasic.exclude` | `[]` | Globs removed from the entries |
-| `opencrbasic.logger` | `cr6` | Logger profile: `cr6`, `cr1000x`, `cr300`, `cr350` |
-| `opencrbasic.encoding` | `utf-8` | Text encoding for file and unsaved content |
-| `opencrbasic.debounceMs` | `300` | Delay after the last edit before analysis |
-| `opencrbasic.analysisTimeoutMs` | `10000` | Per-analysis time limit |
-| `opencrbasic.trace.server` | `off` | Client-server message trace in the `opencrbasic` output channel |
+Settings are declared in [`package.json`](package.json) and documented in
+[the guide, section 3](../docs/lsp-user-guide.md#3-settings). The ones that restart the server are
+`pythonPath`, `serverArgs` and `serverEnv`; the rest reach the running server without a restart.
 
-Changes to `pythonPath`, `serverArgs` and `serverEnv` restart the server. The other settings are
-sent to the running server as configuration changes.
+## Highlighting and limitations
 
-## Highlighting
-
-`syntaxes/crbasic.tmLanguage.json` is a TextMate grammar generated from the CR6 instruction
-catalog by `opencrbasic/tools/gen_grammar.py`; do not edit it by hand (see `docs/lsp-api.md`,
-"Instruction catalog"). It highlights comments, strings, numbers, `#If` directives, keywords,
-instructions, built-in functions, predefined constants and operators. The names are the CR6
-ones, whatever `opencrbasic.logger` is set to. How it renders in VS Code has not been observed; that is a human check.
-
-## Limitations
-
-- The client shows server diagnostics only. Completion, hover, outline and other editing
-  features are not implemented.
-- Launching inside VS Code has not been tested in the development container, because the VS
-  Code download is blocked there. The extension host launch is a human check. Only `npm ci`,
-  `npm run compile` and `npm test` have been run.
+- `syntaxes/crbasic.tmLanguage.json` is generated from the CR6 catalog by `tools/gen_grammar.py`. Do
+  not edit it by hand ([lsp-api.md](../docs/lsp-api.md), "Generated TextMate grammar").
+- Rename, formatting and quick fixes are not offered by the server yet, and file changes outside the
+  editor are not watched. See [the guide, section 5.10](../docs/lsp-user-guide.md#510-not-offered-by-the-server-on-this-base)
+  and [section 9](../docs/lsp-user-guide.md#9-known-limits).
+- Only macOS has been tested in VS Code. Windows and Linux are untested.
