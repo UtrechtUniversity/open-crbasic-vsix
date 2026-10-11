@@ -6,3 +6,6 @@ tsconfig.json
 package-lock.json
 .gitignore
 .vscodeignore
+*.vsix
+node_modules/**/*.d.ts
+node_modules/**/*.tsbuildinfo

@@ -163,7 +163,8 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node --test \"out/test/**/*.test.js\""
+    "test": "npm run compile && node --test \"out/test/**/*.test.js\"",
+    "package": "npm run compile && vsce package --allow-missing-repository --skip-license"
   },
   "dependencies": {
     "vscode-languageclient": "10.1.2"
@@ -171,6 +172,7 @@
   "devDependencies": {
     "@types/node": "22.20.4",
     "@types/vscode": "1.95.0",
+    "@vscode/vsce": "4.0.0",
     "typescript": "5.9.3"
   }
 }
