@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ClientLifecycle, type ManagedClient } from '../clientLifecycle';
+import { ClientLifecycle, handleRequestFailure, type ManagedClient } from '../clientLifecycle';
 
 class FakeClient implements ManagedClient {
-  state: 'created' | 'starting' | 'running' | 'stopped' = 'created';
+  state: 'created' | 'starting' | 'running' | 'stopping' | 'stopped' = 'created';
   constructor(readonly log: string[], readonly id: number, private readonly gate?: Promise<void>) {}
   async start(): Promise<void> {
     this.state = 'starting';
@@ -96,4 +96,32 @@ test('a restart still queued when deactivate is called starts no server', async 
   await subject.deactivate();
   await queued;
   assert.equal(created.length, 0);
+});
+
+test('provider failures during start, stop and after stop return the default without reporting', () => {
+  const client = new FakeClient([], 1);
+  const report = () => { throw new Error('Starting server failed'); };
+  for (const state of ['created', 'starting', 'stopping', 'stopped'] as const) {
+    client.state = state;
+    assert.equal(handleRequestFailure(client, null, report), null);
+    assert.equal(handleRequestFailure(client, undefined, report), undefined);
+  }
+});
+
+test('a provider request begun while running can fail after stop without reporting', async () => {
+  const client = new FakeClient([], 1);
+  await client.start();
+  const request = Promise.reject(new Error('Starting server failed')).catch(() =>
+    handleRequestFailure(client, null, () => { throw new Error('reported'); }),
+  );
+  await client.stop();
+  assert.equal(await request, null);
+});
+
+test('provider failures while running still use the language client failure handler', async () => {
+  const client = new FakeClient([], 1);
+  await client.start();
+  const error = new Error('server error');
+  assert.throws(() => handleRequestFailure(client, null, () => { throw error; }), error);
+  assert.equal(handleRequestFailure(client, null, () => 'handled'), 'handled');
 });

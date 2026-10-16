@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { posix, win32 } from 'node:path';
 import {
   OUTPUT_COMMANDS,
   OUTPUT_SCHEME,
@@ -31,11 +32,26 @@ test('an output uri names the document, picks the language by extension and roun
   const source = 'file:///work/My%20Station/Main.CR6';
   const compiler = buildOutputUri('compilerOutput', source);
   const tables = buildOutputUri('tableFields', source);
-  assert.ok(compiler.startsWith(`${OUTPUT_SCHEME}:/`));
+  assert.ok(compiler.startsWith(`${OUTPUT_SCHEME}:`));
   assert.match(decodeURIComponent(compiler.split('?')[0]), /Main\.CR6 compiler output\.txt$/);
   assert.match(decodeURIComponent(tables.split('?')[0]), /Main\.CR6 table fields\.md$/);
   assert.deepEqual(parseOutputUri(compiler), { kind: 'compilerOutput', source });
   assert.deepEqual(parseOutputUri(tables), { kind: 'tableFields', source });
+});
+
+test('output titles have no root separator with local or remote host path conventions', () => {
+  for (const source of ['file:///work/Main.CR6', 'file:///c%3A/work/Main.CR6']) {
+    for (const kind of ['compilerOutput', 'tableFields'] as const) {
+      const uri = new URL(buildOutputUri(kind, source));
+      const path = decodeURIComponent(uri.pathname);
+      const expected = `Main.CR6 ${OUTPUT_COMMANDS[kind].label}${OUTPUT_COMMANDS[kind].extension}`;
+      // Windows UI fsPath conversion followed by a POSIX basename models the Remote-WSL label.
+      for (const label of [path, path.replaceAll('/', '\\')]) {
+        assert.equal(posix.basename(label), expected);
+        assert.equal(win32.basename(label), expected);
+      }
+    }
+  }
 });
 
 test('a source uri with query characters and non-ASCII text round-trips', () => {

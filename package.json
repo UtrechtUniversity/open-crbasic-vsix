@@ -16,7 +16,18 @@
   "activationEvents": [
     "onLanguage:crbasic"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Runs a Python language server from the configured interpreter. Trust this folder to enable CRBasic language support."
+    }
+  },
   "contributes": {
+    "configurationDefaults": {
+      "[crbasic]": {
+        "editor.inlayHints.maximumLength": 0
+      }
+    },
     "languages": [
       {
         "id": "crbasic",

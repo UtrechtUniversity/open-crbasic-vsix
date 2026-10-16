@@ -3,12 +3,13 @@ import {
   LanguageClient,
   type LanguageClientOptions,
   ExecuteCommandRequest,
+  type MessageSignature,
   type ServerOptions,
   Trace,
   TransportKind,
 } from 'vscode-languageclient/node';
 import { canNotify, planConfigurationChange } from './configChange';
-import { ClientLifecycle } from './clientLifecycle';
+import { ClientLifecycle, handleRequestFailure } from './clientLifecycle';
 import {
   OUTPUT_COMMANDS,
   OUTPUT_SCHEME,
@@ -131,6 +132,21 @@ function restartClient(): Promise<void> {
   return lifecycle.restart();
 }
 
+class RestartableLanguageClient extends LanguageClient {
+  override handleFailedRequest<T>(
+    type: MessageSignature,
+    token: vscode.CancellationToken | undefined,
+    error: unknown,
+    defaultValue: T,
+    showNotification = true,
+    throwOnCancel = false,
+  ): T {
+    return handleRequestFailure(this, defaultValue, () =>
+      super.handleFailedRequest(type, token, error, defaultValue, showNotification, throwOnCancel),
+    );
+  }
+}
+
 function createClient(): LanguageClient {
   const config = vscode.workspace.getConfiguration(SECTION);
   const launch = buildServerLaunch(readLaunchSettings(config), process.env);
@@ -150,7 +166,7 @@ function createClient(): LanguageClient {
     outputChannel: output,
     traceOutputChannel: output,
   };
-  return new LanguageClient(SECTION, SECTION, serverOptions, clientOptions);
+  return new RestartableLanguageClient(SECTION, SECTION, serverOptions, clientOptions);
 }
 
 // The server pulls its settings on each notification (`settings: null`), so none are sent here.

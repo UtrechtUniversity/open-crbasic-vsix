@@ -50,12 +50,13 @@ function baseName(uri: string): string {
   }
 }
 
-// `opencrbasic-output:/<encoded name> <label><ext>?<kind>&<encoded source uri>`; the name only
-// titles the tab, the query carries what the content provider needs.
+// `opencrbasic-output:<encoded name> <label><ext>?<kind>&<encoded source uri>`; the name only
+// titles the tab, the query carries what the content provider needs. Keep the path relative:
+// a leading slash becomes a backslash in Windows UI labels, which WSL's basename leaves intact.
 export function buildOutputUri(kind: OutputKind, source: string): string {
   const command = OUTPUT_COMMANDS[kind];
   const name = encodeURIComponent(`${baseName(source)} ${command.label}${command.extension}`);
-  return `${OUTPUT_SCHEME}:/${name}?${kind}&${encodeURIComponent(source)}`;
+  return `${OUTPUT_SCHEME}:${name}?${kind}&${encodeURIComponent(source)}`;
 }
 
 // The query of an output uri after one round of percent-decoding, which is what `vscode.Uri.query`
@@ -72,7 +73,7 @@ export function parseOutputQuery(query: string): OutputTarget | undefined {
 
 export function parseOutputUri(uri: string): OutputTarget | undefined {
   const mark = uri.indexOf('?');
-  if (!uri.startsWith(`${OUTPUT_SCHEME}:/`) || mark < 0) {
+  if (!uri.startsWith(`${OUTPUT_SCHEME}:`) || mark < 0) {
     return undefined;
   }
   try {

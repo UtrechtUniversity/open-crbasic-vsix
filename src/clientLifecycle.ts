@@ -5,6 +5,16 @@ export interface ManagedClient extends StoppableClient {
   start(): Promise<void>;
 }
 
+// Providers can finish after stop has begun. Use their normal empty result then, before the
+// language client's failure handler can show a toast (H-18). Running-client errors still surface.
+export function handleRequestFailure<T>(
+  client: Pick<ManagedClient, 'isRunning'>,
+  defaultValue: T,
+  onRunningFailure: () => T,
+): T {
+  return client.isRunning() ? onRunningFailure() : defaultValue;
+}
+
 export interface LifecycleHooks<C extends ManagedClient> {
   create(): C;
   afterStart(client: C): Promise<void>;
