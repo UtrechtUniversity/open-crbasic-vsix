@@ -12,7 +12,7 @@ host-tested status are in `opencrbasic/docs/lsp-user-guide.md`. Start there.
 
 - Node.js with npm (the macOS host run at `1b01311d` used Node 26.0.0 and npm 11.12.1) and VS Code
   1.95 or newer (the host run used VS Code 1.141.0).
-- A Python 3.10+ environment with opencrbasic and pygls: from `opencrbasic/`, `uv sync`. See
+- A Python 3.15+ environment with opencrbasic and pygls: from `opencrbasic/`, `uv sync`. See
   section 2 of `opencrbasic/docs/lsp-user-guide.md`.
 - `opencrbasic.pythonPath` set to that environment's interpreter, as an absolute path.
 
