@@ -4,7 +4,7 @@
   "description": "CRBasic language support for CR6 programs, backed by the opencrbasic language server.",
   "publisher": "opencrbasic-local",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.95.0"
