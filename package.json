@@ -161,6 +161,20 @@
           "minimum": 1,
           "description": "Memory in megabytes for parsed programs kept for hover, completion and navigation. The least recently used program is dropped when it is exceeded."
         },
+        "opencrbasic.checks": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["error", "warning", "info", "off"]
+          },
+          "markdownDescription": "Severity per opencrbasic check code, for example `{\"OCB005\": \"off\"}`. Overrides `opencrbasic.toml` (its `[checks]`, `[profile.*]` and `[entry.*]` tables). Checks run only on programs the reference compiler accepts."
+        },
+        "opencrbasic.coverageNotices": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show coverage notices as hints: at the first use of a CR6 instruction, the reference compiler rules opencrbasic does not model. Information only, never a compiler verdict."
+        },
         "opencrbasic.helpDirectory": {
           "type": "string",
           "default": "",
