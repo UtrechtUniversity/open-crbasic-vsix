@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uvx pre-commit run --all-files --show-diff-on-failure
+      - run: npx vsce package --out opencrbasic.vsix
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: vsix
+          path: opencrbasic.vsix
+
+  # main publishes to the Visual Studio Marketplace when the version in package.json is new.
+  publish:
+    needs: check
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: marketplace
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vsce publish --skip-duplicate
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}

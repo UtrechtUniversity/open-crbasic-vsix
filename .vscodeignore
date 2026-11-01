@@ -9,3 +9,9 @@ package-lock.json
 *.vsix
 node_modules/**/*.d.ts
 node_modules/**/*.tsbuildinfo
+eslint.config.mjs
+AGENTS.md
+CLAUDE.md
+.pre-commit-config.yaml
+.github/**
+.git-blame-ignore-revs
