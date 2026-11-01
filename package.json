@@ -2,7 +2,7 @@
   "name": "opencrbasic",
   "displayName": "CRBasic (opencrbasic)",
   "description": "CRBasic language support for CR6 programs, backed by the opencrbasic language server.",
-  "publisher": "utrecht-university",
+  "publisher": "OttodeVisserUU",
   "version": "1.0.0",
   "license": "MIT",
   "repository": {
