@@ -29,12 +29,16 @@ jobs:
           name: vsix
           path: opencrbasic.vsix
 
-  # main publishes to the Visual Studio Marketplace when the version in package.json is new.
+  # main publishes to the Visual Studio Marketplace when the version in package.json is new, through
+  # Marketplace Trusted Publishing (OIDC): no token is stored (README, "Releasing").
   publish:
     needs: check
     if: github.event_name == 'push' && github.ref_name == 'main'
     runs-on: ubuntu-latest
     environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7.1.0
@@ -42,6 +46,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vsce publish --skip-duplicate
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - run: npx vsce publish --oidc --skip-duplicate

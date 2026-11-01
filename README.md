@@ -83,6 +83,6 @@ Settings are declared in `package.json` and documented in section 3 of [the user
 
 A push to `main` that passes CI publishes the extension to the Visual Studio Marketplace when the
 `version` in `package.json` has not been published yet (`vsce publish --skip-duplicate`); bump it
-with `npm version patch --no-git-tag-version` in the change to release. Publishing needs the
-`VSCE_PAT` secret in the `marketplace` GitHub environment. The extension's version is independent of
+with `npm version patch --no-git-tag-version` in the change to release. Publishing uses Marketplace
+Trusted Publishing (OIDC) from the `marketplace` GitHub environment; no token is stored. The extension's version is independent of
 the opencrbasic package version.
