@@ -13,6 +13,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node';
 import { canNotify, planConfigurationChange } from './configChange';
+import { registerLogger } from './logger';
 import { ClientLifecycle, handleRequestFailure } from './clientLifecycle';
 import {
   OUTPUT_COMMANDS,
@@ -139,6 +140,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
   );
+  registerLogger(context, output);
   void restartClient();
 }
 
