@@ -4,6 +4,7 @@ import {
   buildServerLaunch,
   findUv,
   initializationOptions,
+  olderThan,
   resolvePythonPath,
   uvInstaller,
   uvToolPython,
@@ -126,4 +127,15 @@ test('uvInstaller runs the official installer for the platform', () => {
   assert.equal(uvInstaller('win32').command, 'powershell');
   assert.match(uvInstaller('win32').args.join(' '), /astral\.sh\/uv\/install\.ps1/);
   assert.deepEqual(uvInstaller('linux'), { command: 'sh', args: ['-c', 'curl -LsSf https://astral.sh/uv/install.sh | sh'] });
+});
+
+test('olderThan compares release numbers and ignores unknown versions', () => {
+  assert.equal(olderThan('1.0.0', '1.1.0'), true);
+  assert.equal(olderThan('1.0', '1.0.1'), true);
+  assert.equal(olderThan('1.1.0', '1.1.0'), false);
+  assert.equal(olderThan('1.1.0.dev12', '1.1.0'), false);
+  assert.equal(olderThan('1.10.0', '1.9.0'), false);
+  assert.equal(olderThan('2.0.0', '1.1.0'), false);
+  assert.equal(olderThan(undefined, '1.1.0'), false);
+  assert.equal(olderThan('unknown', '1.1.0'), false);
 });
