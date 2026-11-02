@@ -91,3 +91,25 @@ export function initializationOptions(cfg: ServerSettings): ServerSettings {
     inlayHints: { parameterNames: cfg.inlayHints.parameterNames },
   };
 }
+
+// The oldest server this extension's grammar and features expect (opencrbasic 1.1.0: macros).
+export const MIN_SERVER_VERSION = '1.1.0';
+
+// True when `version` (the server's `serverInfo.version`, e.g. `1.0.0` or `1.1.0.dev12`) has a
+// lower release number than `minimum`; an unknown or unparsable version is not reported as older.
+export function olderThan(version: string | undefined, minimum: string): boolean {
+  const release = (v: string | undefined) => /^\d+(?:\.\d+)*/.exec(v ?? '')?.[0].split('.').map(Number);
+  const have = release(version);
+  const want = release(minimum) ?? [];
+  if (!have) {
+    return false;
+  }
+  for (let i = 0; i < Math.max(have.length, want.length); i++) {
+    const a = have[i] ?? 0;
+    const b = want[i] ?? 0;
+    if (a !== b) {
+      return a < b;
+    }
+  }
+  return false;
+}

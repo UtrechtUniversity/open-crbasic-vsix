@@ -26,6 +26,8 @@ import {
   buildServerLaunch,
   findUv,
   initializationOptions,
+  MIN_SERVER_VERSION,
+  olderThan,
   resolvePythonPath,
   uvInstaller,
   uvToolPython,
@@ -44,13 +46,17 @@ const TRACE_KEY = `${SECTION}.trace.server`;
 const CONFIGURATION_NOTIFICATION = 'workspace/didChangeConfiguration';
 const INSTALL_ACTION = 'Install server with uv';
 const INSTALL_UV_ACTION = 'Install uv and server';
+const UPGRADE_ACTION = 'Upgrade server with uv';
 const GUIDE_ACTION = 'Setup guide';
 const GUIDE_URL = 'https://github.com/UtrechtUniversity/open-crbasic-vsix#readme';
 
 let output: vscode.LogOutputChannel | undefined;
 const lifecycle = new ClientLifecycle<LanguageClient>({
   create: createClient,
-  afterStart: () => applyTrace(),
+  afterStart: async (client) => {
+    await applyTrace();
+    void offerUpgrade(client.initializeResult?.serverInfo?.version);
+  },
   onStartError: (err) => {
     const message = err instanceof Error ? err.message : String(err);
     output?.error(`server failed to start: ${message}`);
@@ -158,6 +164,37 @@ async function offerInstall(message: string): Promise<void> {
   } else if (choice === GUIDE_ACTION) {
     await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
   }
+}
+
+// Once per session: a server older than this extension expects still starts, without the newer features.
+let upgradeOffered = false;
+async function offerUpgrade(version: string | undefined): Promise<void> {
+  if (upgradeOffered || !olderThan(version, MIN_SERVER_VERSION)) {
+    return;
+  }
+  upgradeOffered = true;
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const uvTool = configuredPythonPath(config) === undefined && existsSync(uvToolPython(process.env, process.platform, homedir()));
+  const uv = uvTool ? locateUv() : undefined;
+  const text = `opencrbasic: the language server is version ${version}; this extension expects ${MIN_SERVER_VERSION} or later.`;
+  if (!uv) {
+    const choice = await vscode.window.showWarningMessage(
+      `${text} Upgrade opencrbasic in the environment of opencrbasic.pythonPath.`,
+      GUIDE_ACTION,
+    );
+    if (choice) {
+      await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
+    }
+    return;
+  }
+  if ((await vscode.window.showWarningMessage(text, UPGRADE_ACTION)) !== UPGRADE_ACTION) {
+    return;
+  }
+  if ((await runTask('upgrade opencrbasic', uv, ['tool', 'upgrade', 'opencrbasic'])) !== 0) {
+    return installFailed('upgrading the server with uv failed');
+  }
+  output?.info('opencrbasic upgraded with uv; restarting the server');
+  await restartClient();
 }
 
 function locateUv(): string | undefined {

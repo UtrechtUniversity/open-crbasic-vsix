@@ -16,6 +16,8 @@ MIT licensed; not affiliated with Campbell Scientific.
    `uv tool install "opencrbasic[lsp]"`; uv fetches Python 3.15 itself. Without
    [uv](https://docs.astral.sh/uv/), it offers to run Astral's uv installer first (which also adds
    uv to your shell's PATH). A uv tool install is found without any setting.
+   A server older than the extension expects (`MIN_SERVER_VERSION` in `src/serverOptions.ts`)
+   still starts; the extension then offers `uv tool upgrade opencrbasic` once per session.
 3. With another environment (`pip install "opencrbasic[lsp]"` into any Python 3.15+), set
    `opencrbasic.pythonPath` to its interpreter, as an absolute path.
 
