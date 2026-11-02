@@ -75,6 +75,39 @@
       {
         "command": "opencrbasic.openTableFields",
         "title": "opencrbasic: Show Table Fields"
+      },
+      {
+        "command": "openloggernet.openPanel",
+        "title": "Logger: Open Panel"
+      },
+      {
+        "command": "openloggernet.selectLogger",
+        "title": "Logger: Select Logger"
+      },
+      {
+        "command": "openloggernet.showInfo",
+        "title": "Logger: Show Station Info"
+      },
+      {
+        "command": "openloggernet.sendProgram",
+        "title": "Logger: Send Program and Run",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "openloggernet.collect",
+        "title": "Logger: Collect Table..."
+      },
+      {
+        "command": "openloggernet.stopProgram",
+        "title": "Logger: Stop Program (keep data)"
+      },
+      {
+        "command": "openloggernet.resumeProgram",
+        "title": "Logger: Resume Program"
+      },
+      {
+        "command": "openloggernet.setClock",
+        "title": "Logger: Set Clock to UTC"
       }
     ],
     "configuration": {
@@ -206,6 +239,21 @@
           ],
           "default": "off",
           "description": "Trace of client-server messages in the opencrbasic output channel."
+        },
+        "openloggernet.command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "oln"
+          ],
+          "markdownDescription": "Command that runs open-loggernet's `oln`, e.g. `[\"oln\"]` after `uv tool install openloggernet`, or `[\"uv\", \"run\", \"--project\", \"/path/to/open-loggernet\", \"oln\"]` for a checkout."
+        },
+        "openloggernet.port": {
+          "type": "string",
+          "default": "",
+          "description": "Serial port of the logger to use, e.g. COM5 or /dev/ttyACM0. Empty: the logger chosen with Logger: Select Logger, or the only one attached."
         }
       }
     },
@@ -218,6 +266,17 @@
         {
           "command": "opencrbasic.openTableFields",
           "when": "editorLangId == crbasic"
+        },
+        {
+          "command": "openloggernet.sendProgram",
+          "when": "editorLangId == crbasic"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "openloggernet.sendProgram",
+          "when": "editorLangId == crbasic",
+          "group": "navigation"
         }
       ]
     }

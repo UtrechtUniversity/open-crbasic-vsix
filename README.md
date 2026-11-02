@@ -76,6 +76,23 @@ When the interpreter imports `opencrbasic` from another checkout, for example a 
 Settings are declared in `package.json` and documented in section 3 of [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md). The ones that restart the server are
 `pythonPath`, `serverArgs` and `serverEnv`; the rest reach the running server without a restart.
 
+## Logger actions
+
+With [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet) installed (`uv tool
+install openloggernet`, which puts `oln` on the path), the extension talks to a Campbell logger
+attached by USB:
+
+| Command | What it does |
+|---|---|
+| Logger: Open Panel | Station info, clock, tables, files, live values and the logger's terminal in one view, in the manner of LoggerNet's Connect screen. |
+| Logger: Send Program and Run | Sends the open program to `CPU:`, has the logger compile and run it, and reports its compile result. Also the upload button in a CRBasic editor's title bar. |
+| Logger: Collect Table... | Collects a whole table to a TOA5 `.dat`, CSV or JSON Lines file. |
+| Logger: Select Logger, Show Station Info, Stop Program, Resume Program, Set Clock to UTC | As named. |
+
+`openloggernet.command` sets how `oln` is run (default `["oln"]`); `openloggernet.port` pins a
+serial port. Only one program can hold a logger's port, so disconnect LoggerNet first; the
+extension runs one `oln` call at a time and pauses a live watch while another call needs the port.
+
 ## Highlighting and limitations
 
 - `syntaxes/crbasic.tmLanguage.json` is generated from the CR6 catalog by opencrbasic's
