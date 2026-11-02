@@ -83,7 +83,7 @@
         "opencrbasic.pythonPath": {
           "type": "string",
           "default": "python3",
-          "description": "Python interpreter that runs the opencrbasic language server. It needs the opencrbasic package and pygls (the lsp extra)."
+          "description": "Python interpreter that runs the opencrbasic language server. It needs the opencrbasic package and pygls (the lsp extra). When not set, the interpreter of `uv tool install \"opencrbasic[lsp]\"` is used if it exists, else python3."
         },
         "opencrbasic.serverArgs": {
           "type": "array",

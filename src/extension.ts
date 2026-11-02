@@ -1,5 +1,9 @@
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import * as vscode from 'vscode';
 import {
+  CloseAction,
+  type ErrorHandler,
   LanguageClient,
   type LanguageClientOptions,
   ExecuteCommandRequest,
@@ -20,7 +24,11 @@ import {
 } from './outputCommands';
 import {
   buildServerLaunch,
+  findUv,
   initializationOptions,
+  resolvePythonPath,
+  uvInstaller,
+  uvToolPython,
   type LaunchSettings,
   type ServerSettings,
 } from './serverOptions';
@@ -34,6 +42,10 @@ const RESTART_KEYS = [
 ];
 const TRACE_KEY = `${SECTION}.trace.server`;
 const CONFIGURATION_NOTIFICATION = 'workspace/didChangeConfiguration';
+const INSTALL_ACTION = 'Install server with uv';
+const INSTALL_UV_ACTION = 'Install uv and server';
+const GUIDE_ACTION = 'Setup guide';
+const GUIDE_URL = 'https://github.com/UtrechtUniversity/open-crbasic-vsix#readme';
 
 let output: vscode.LogOutputChannel | undefined;
 const lifecycle = new ClientLifecycle<LanguageClient>({
@@ -42,7 +54,7 @@ const lifecycle = new ClientLifecycle<LanguageClient>({
   onStartError: (err) => {
     const message = err instanceof Error ? err.message : String(err);
     output?.error(`server failed to start: ${message}`);
-    void vscode.window.showErrorMessage(`opencrbasic: language server failed to start (${message})`);
+    void offerInstall(message);
   },
   onStopError: (err) => {
     output?.warn(`stopping previous server: ${err instanceof Error ? err.message : String(err)}`);
@@ -128,11 +140,116 @@ export function deactivate(): Thenable<void> {
   return lifecycle.deactivate();
 }
 
+// The install is offered only when nothing points at a server: no pythonPath set and no uv tool install.
+async function offerInstall(message: string): Promise<void> {
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const offer = configuredPythonPath(config) === undefined && !existsSync(uvToolPython(process.env, process.platform, homedir()));
+  const uv = offer ? locateUv() : undefined;
+  const install = uv ? INSTALL_ACTION : INSTALL_UV_ACTION;
+  const actions = offer ? [install, GUIDE_ACTION] : [GUIDE_ACTION];
+  const text = !offer
+    ? `opencrbasic: language server failed to start (${message}). Check opencrbasic.pythonPath.`
+    : uv
+      ? 'opencrbasic: the language server is not installed. Install it with uv (`uv tool install "opencrbasic[lsp]"`)?'
+      : 'opencrbasic: the language server is not installed, and neither is uv. Download and run the uv installer from astral.sh, then install the server with uv?';
+  const choice = await vscode.window.showErrorMessage(text, ...actions);
+  if (choice === install) {
+    await installServer(uv);
+  } else if (choice === GUIDE_ACTION) {
+    await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
+  }
+}
+
+function locateUv(): string | undefined {
+  return findUv(process.env, process.platform, homedir(), existsSync);
+}
+
+// Installs uv first when it is missing, then the server, each as a visible task; restarts on success.
+async function installServer(uv: string | undefined): Promise<void> {
+  if (!uv) {
+    const installer = uvInstaller(process.platform);
+    if ((await runTask('install uv', installer.command, installer.args)) !== 0) {
+      return installFailed('installing uv failed');
+    }
+    uv = locateUv();
+    if (!uv) {
+      return installFailed('uv was installed but not found');
+    }
+  }
+  if ((await runTask('install opencrbasic', uv, ['tool', 'install', 'opencrbasic[lsp]'])) !== 0) {
+    return installFailed('installing the server with uv failed');
+  }
+  output?.info('opencrbasic installed with uv; restarting the server');
+  await restartClient();
+}
+
+// No shell between: arguments such as `opencrbasic[lsp]` reach the process unquoted and unglobbed.
+function runTask(name: string, command: string, args: string[]): Promise<number | undefined> {
+  const task = new vscode.Task(
+    { type: 'process', task: name },
+    vscode.TaskScope.Global,
+    name,
+    SECTION,
+    new vscode.ProcessExecution(command, args),
+  );
+  return new Promise((resolve, reject) => {
+    const ended = vscode.tasks.onDidEndTaskProcess((event) => {
+      if (event.execution.task === task) {
+        ended.dispose();
+        resolve(event.exitCode);
+      }
+    });
+    vscode.tasks.executeTask(task).then(undefined, (err: unknown) => {
+      ended.dispose();
+      reject(err);
+    });
+  });
+}
+
+async function installFailed(what: string): Promise<void> {
+  output?.error(what);
+  const choice = await vscode.window.showErrorMessage(`opencrbasic: ${what}; see the task output.`, GUIDE_ACTION);
+  if (choice) {
+    await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
+  }
+}
+
 function restartClient(): Promise<void> {
   return lifecycle.restart();
 }
 
+// A server that fails to start is reported once, by onStartError with its install offer: while
+// starting, the client's own notifications go only to the output channel and it does not retry.
+// Crashes after a successful start keep the client's default notifications and restarts.
 class RestartableLanguageClient extends LanguageClient {
+  private starting = false;
+
+  override async start(): Promise<void> {
+    this.starting = true;
+    try {
+      await super.start();
+    } finally {
+      this.starting = false;
+    }
+    // vscode-languageclient 10.1.2 resolves start() when the connection closes without restart
+    // during startup (it clears its start promise), so a server that exited is detected here.
+    if (!this.isRunning()) {
+      throw new Error('the server process exited during startup; see the opencrbasic output');
+    }
+  }
+
+  override error(message: string, data?: unknown, showNotification: boolean | 'force' = true): void {
+    super.error(message, data, this.starting ? false : showNotification);
+  }
+
+  override createDefaultErrorHandler(maxRestartCount?: number): ErrorHandler {
+    const base = super.createDefaultErrorHandler(maxRestartCount);
+    return {
+      error: (error, message, count) => base.error(error, message, count),
+      closed: () => (this.starting ? { action: CloseAction.DoNotRestart, handled: true } : base.closed()),
+    };
+  }
+
   override handleFailedRequest<T>(
     type: MessageSignature,
     token: vscode.CancellationToken | undefined,
@@ -161,6 +278,8 @@ function createClient(): LanguageClient {
     // No `synchronize.configurationSection`: the client's own sync would also notify a client that
     // is being replaced (H-02). Changes reach the running client through notifySettings.
     // Read at each (re)start, so a restart always sends current settings.
+    // Without it the client shows the bare initialization error in a notification of its own.
+    initializationFailedHandler: () => false,
     initializationOptions: () =>
       initializationOptions(readServerSettings(vscode.workspace.getConfiguration(SECTION))),
     outputChannel: output,
@@ -196,9 +315,19 @@ async function applyTrace(): Promise<void> {
   }
 }
 
+// The value a user or workspace set, not the manifest default.
+function configuredPythonPath(config: vscode.WorkspaceConfiguration): string | undefined {
+  const value = config.inspect<string>('pythonPath');
+  return value?.workspaceFolderValue ?? value?.workspaceValue ?? value?.globalValue;
+}
+
 function readLaunchSettings(config: vscode.WorkspaceConfiguration): LaunchSettings {
   return {
-    pythonPath: config.get<string>('pythonPath', 'python3'),
+    pythonPath: resolvePythonPath(
+      configuredPythonPath(config),
+      uvToolPython(process.env, process.platform, homedir()),
+      existsSync,
+    ),
     serverArgs: config.get<string[]>('serverArgs', ['-m', 'opencrbasic.lsp']),
     serverEnv: config.get<Record<string, string>>('serverEnv', {}),
   };

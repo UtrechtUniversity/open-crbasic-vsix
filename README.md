@@ -11,18 +11,21 @@ MIT licensed; not affiliated with Campbell Scientific.
 
 ## Quick start
 
-1. Install the server: `uv tool install "opencrbasic[lsp]"` (or `pip install "opencrbasic[lsp]"` into
-   any Python 3.15+ environment).
-2. Install this extension from the Marketplace ("CRBasic (opencrbasic)").
-3. Set `opencrbasic.pythonPath` to that environment's interpreter, as an absolute path. With
-   `uv tool`, that is `$(uv tool dir)/opencrbasic/bin/python`.
+1. Install this extension from the Marketplace ("CRBasic (opencrbasic)").
+2. Open a CRBasic file. If the server is missing, the extension offers to install it with
+   `uv tool install "opencrbasic[lsp]"`; uv fetches Python 3.15 itself. Without
+   [uv](https://docs.astral.sh/uv/), it offers to run Astral's uv installer first (which also adds
+   uv to your shell's PATH). A uv tool install is found without any setting.
+3. With another environment (`pip install "opencrbasic[lsp]"` into any Python 3.15+), set
+   `opencrbasic.pythonPath` to its interpreter, as an absolute path.
 
 ## Requirements
 
 - Node.js with npm (the macOS host run at `1b01311d` used Node 26.0.0 and npm 11.12.1) and VS Code
   1.95 or newer (the host run used VS Code 1.141.0).
 - A Python 3.15+ environment with `opencrbasic[lsp]`; see section 2 of [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md).
-- `opencrbasic.pythonPath` set to that environment's interpreter, as an absolute path.
+- `opencrbasic.pythonPath` set to that environment's interpreter, as an absolute path, unless it is
+  a `uv tool` install, which is found on its own.
 
 ## Build and test
 
