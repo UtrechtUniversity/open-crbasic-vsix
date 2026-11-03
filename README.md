@@ -49,10 +49,11 @@ npm run package
 code --install-extension opencrbasic-<version>.vsix
 ```
 
-`npm run package` compiles, then writes `opencrbasic-<version>.vsix` into this directory. The `.vsix`
-is git-ignored and must not be committed. The package holds `out/`, `syntaxes/`,
-`language-configuration.json`, `package.json`, this README and the runtime dependency
-`vscode-languageclient` with its dependencies. It excludes `src/`, the tests and `.vscode/`.
+`npm run package` type-checks, bundles the client and `vscode-languageclient` into one minified
+`dist/extension.js` with esbuild, then writes `opencrbasic-<version>.vsix` into this directory. The
+`.vsix` is git-ignored and must not be committed. The package holds `dist/extension.js`,
+`syntaxes/`, `language-configuration.json`, `package.json` and this README; `node_modules/`, `out/`,
+`src/`, the tests and `.vscode/` stay out.
 CI builds the same package on every push and publishes it to the Visual Studio Marketplace from
 `main` (see "Releasing").
 
@@ -62,7 +63,8 @@ has not been run in the build container.
 
 ## Development launch
 
-1. Open this repository in VS Code and run `npm run compile` (or `npm run watch`).
+1. Open this repository in VS Code and run `npm run bundle` (or `npm run watch`, which rebuilds
+   `dist/extension.js` with a source map on every change).
 2. Press F5 ("Run Extension"). This opens an Extension Development Host with no folder.
 3. Open a folder with CRBasic programs, then open a CRBasic file.
 
