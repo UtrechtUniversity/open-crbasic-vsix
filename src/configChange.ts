@@ -17,8 +17,8 @@ export interface ConfigPlan {
 }
 
 // A restart already reads every setting (initializationOptions at start, then the server pulls
-// `workspace/configuration` on `initialized`). Notifying the client being replaced is what raced
-// with its stop in H-02, so a restart plans no notification.
+// `workspace/configuration` on `initialized`). Notifying the client being replaced races with its
+// stop (host test H-02), so a restart plans no notification.
 export function planConfigurationChange(change: ConfigChange): ConfigPlan {
   if (change.restartKeys) {
     return { restart: true, applyTrace: false, notify: false };
