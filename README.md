@@ -64,8 +64,7 @@ has not been run in the build container.
 
 1. Open this repository in VS Code and run `npm run compile` (or `npm run watch`).
 2. Press F5 ("Run Extension"). This opens an Extension Development Host with no folder.
-3. Open a folder with CRBasic programs, for example a checkout of
-   [firnmelt-station](https://github.com/UtrechtUniversity/firnmelt-station), then open a CRBasic file.
+3. Open a folder with CRBasic programs, then open a CRBasic file.
 
 When the interpreter imports `opencrbasic` from another checkout, for example a git worktree, set
 `opencrbasic.serverEnv` to `{"PYTHONPATH": "<checkout>/src"}`. Run
@@ -78,9 +77,10 @@ Settings are declared in `package.json` and documented in section 3 of [the user
 
 ## Logger actions
 
-With [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet) installed (`uv tool
-install openloggernet`, which puts `oln` on the path), the extension talks to a Campbell logger
-attached by USB:
+Backed by [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet)'s `oln`, the
+extension talks to a Campbell logger attached by USB. Before the first logger action of a session it
+checks `oln --version`, and offers to install open-loggernet with uv (`uv tool install
+openloggernet`) when it is missing, or to upgrade it when it is older than the extension needs:
 
 | Command | What it does |
 |---|---|
@@ -89,7 +89,8 @@ attached by USB:
 | Logger: Collect Table... | Collects a whole table to a TOA5 `.dat`, CSV or JSON Lines file. |
 | Logger: Select Logger, Show Station Info, Stop Program, Resume Program, Set Clock to UTC | As named. |
 
-`openloggernet.command` sets how `oln` is run (default `["oln"]`); `openloggernet.port` pins a
+`openloggernet.command` sets how `oln` is run (default: the uv tool install's `oln`, else `oln` on
+PATH); `openloggernet.port` pins a
 serial port. Only one program can hold a logger's port, so disconnect LoggerNet first; the
 extension runs one `oln` call at a time and pauses a live watch while another call needs the port.
 

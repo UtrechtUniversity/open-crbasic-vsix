@@ -1,8 +1,10 @@
 // Logger actions backed by open-loggernet's `oln` command line: palette commands and the Logger
 // panel. Only one program can hold a logger's serial port, so every `oln` call goes through one
 // queue, and a running watch is paused while another call needs the port.
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import * as vscode from 'vscode';
 import {
   LineBuffer,
@@ -22,10 +24,25 @@ import {
   type TableInfo,
 } from './loggerCli';
 import { parseRequest, renderPanel, type PanelRequest } from './loggerPanel';
+import { MIN_OLN_VERSION, olderThan, parseOlnVersion, resolveOlnCommand, uvToolOln } from './serverOptions';
+import { ensureUv, locateUv, runUv } from './uvTasks';
 
 const SECTION = 'openloggernet';
 const PORT_STATE = `${SECTION}.port`;
 const INSTALL_HINT = 'Install open-loggernet (`uv tool install openloggernet`) or set openloggernet.command.';
+const INSTALL_ACTION = 'Install open-loggernet with uv';
+const INSTALL_UV_ACTION = 'Install uv and open-loggernet';
+const UPGRADE_ACTION = 'Upgrade open-loggernet with uv';
+
+// The installed `oln`'s version, or undefined when it does not run or does not print one (before 0.3.0).
+function olnVersion(command: string[]): Promise<string | undefined> {
+  const [program, ...prefix] = command;
+  return new Promise((resolve) => {
+    execFile(program, [...prefix, '--version'], { windowsHide: true, timeout: 30000 }, (err, stdout) =>
+      resolve(err ? undefined : parseOlnVersion(stdout)),
+    );
+  });
+}
 
 interface Watch {
   table: string;
@@ -35,6 +52,7 @@ interface Watch {
 
 export class LoggerService implements vscode.Disposable {
   private queue: Promise<unknown> = Promise.resolve();
+  private olnChecked: Promise<void> | undefined;
   private watch: Watch | undefined;
   private panel: vscode.WebviewPanel | undefined;
 
@@ -50,9 +68,67 @@ export class LoggerService implements vscode.Disposable {
 
   // -- running oln --
 
+  // The value a user or workspace set, not the manifest default.
+  private configuredCommand(): string[] | undefined {
+    const value = vscode.workspace.getConfiguration(SECTION).inspect<string[]>('command');
+    const set = value?.workspaceFolderValue ?? value?.workspaceValue ?? value?.globalValue;
+    return set?.length ? set : undefined;
+  }
+
+  private uvOln(): string {
+    return uvToolOln(process.env, process.platform, homedir());
+  }
+
   private command(): string[] {
-    const configured = vscode.workspace.getConfiguration(SECTION).get<string[]>('command', ['oln']);
-    return configured.length ? configured : ['oln'];
+    return resolveOlnCommand(this.configuredCommand(), this.uvOln(), existsSync);
+  }
+
+  // Once per session, before the first `oln` call: offers to install open-loggernet with uv when no
+  // `oln` runs, or to upgrade it when it is older than this extension drives. A configured command
+  // is the user's to maintain and only gets a warning. A declined offer is not repeated; a failed
+  // install is offered again on the next call.
+  private ensureOln(): Promise<void> {
+    this.olnChecked ??= this.checkOln().catch((err: unknown) => {
+      this.olnChecked = undefined;
+      throw err;
+    });
+    return this.olnChecked;
+  }
+
+  private async checkOln(): Promise<void> {
+    const version = await olnVersion(this.command());
+    if (version && !olderThan(version, MIN_OLN_VERSION)) {
+      return;
+    }
+    // A configured command, or an `oln` on PATH that uv did not install, is the user's to upgrade. A
+    // uv install of open-loggernet takes precedence over an `oln` on PATH that predates `--version`.
+    const configured = this.configuredCommand() !== undefined;
+    const uvTool = existsSync(this.uvOln());
+    if (configured || (!uvTool && version !== undefined)) {
+      void vscode.window.showWarningMessage(
+        `open-loggernet ${version ?? '(version unknown)'} is older than ${MIN_OLN_VERSION}, which the logger actions need. Upgrade the oln that ${configured ? 'openloggernet.command runs' : 'is on PATH'}.`,
+      );
+      return;
+    }
+    const uv = locateUv();
+    const install = uvTool ? UPGRADE_ACTION : uv ? INSTALL_ACTION : INSTALL_UV_ACTION;
+    const text = uvTool
+      ? `open-loggernet ${version ?? '(version unknown)'} is older than ${MIN_OLN_VERSION}, which the logger actions need. Upgrade it with uv?`
+      : 'The logger actions need open-loggernet, which is not installed. Install it with uv (`uv tool install openloggernet`)?';
+    if ((await vscode.window.showWarningMessage(text, install)) !== install) {
+      return;
+    }
+    const found = await ensureUv(uv);
+    if (uvTool) {
+      await runUv(found, 'upgrade openloggernet', ['tool', 'upgrade', 'openloggernet'], 'upgrading open-loggernet with uv failed');
+    } else {
+      await runUv(found, 'install openloggernet', ['tool', 'install', 'openloggernet'], 'installing open-loggernet with uv failed');
+    }
+    const installed = await olnVersion(this.command());
+    if (!installed || olderThan(installed, MIN_OLN_VERSION)) {
+      throw new OlnError(`uv finished, but ${this.uvOln()} does not report open-loggernet ${MIN_OLN_VERSION} or later`);
+    }
+    this.output.info(`open-loggernet ${installed} installed with uv`);
   }
 
   target(): LoggerTarget {
@@ -91,6 +167,7 @@ export class LoggerService implements vscode.Disposable {
   // Runs one oln call on the port, after the calls queued before it; a watch is paused around it.
   run<T>(args: string[], target: LoggerTarget | undefined = this.target()): Promise<T> {
     const next = this.queue.then(async () => {
+      await this.ensureOln();
       const paused = this.watch;
       if (paused && target !== undefined) {
         await this.stopWatch(false);
@@ -110,6 +187,13 @@ export class LoggerService implements vscode.Disposable {
   // -- watch --
 
   startWatch(table: string, interval: number): void {
+    void this.ensureOln().then(
+      () => this.spawnWatch(table, interval),
+      (err: unknown) => this.report(err),
+    );
+  }
+
+  private spawnWatch(table: string, interval: number): void {
     void this.stopWatch(false);
     const child = this.spawnOln(olnArgs(this.target(), oln.watch(table, interval)));
     const lines = new LineBuffer();

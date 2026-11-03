@@ -3,7 +3,7 @@
   "displayName": "CRBasic (opencrbasic)",
   "description": "CRBasic language support for CR6 programs, backed by the opencrbasic language server.",
   "publisher": "OttodeVisserUU",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -245,10 +245,8 @@
           "items": {
             "type": "string"
           },
-          "default": [
-            "oln"
-          ],
-          "markdownDescription": "Command that runs open-loggernet's `oln`, e.g. `[\"oln\"]` after `uv tool install openloggernet`, or `[\"uv\", \"run\", \"--project\", \"/path/to/open-loggernet\", \"oln\"]` for a checkout."
+          "default": [],
+          "markdownDescription": "Command that runs open-loggernet's `oln`, e.g. `[\"uv\", \"run\", \"--project\", \"/path/to/open-loggernet\", \"oln\"]` for a checkout. Empty: the `oln` of `uv tool install openloggernet` if it exists, else `oln` on PATH; the extension offers to install or upgrade open-loggernet with uv."
         },
         "openloggernet.port": {
           "type": "string",

@@ -25,16 +25,15 @@ import {
 } from './outputCommands';
 import {
   buildServerLaunch,
-  findUv,
   initializationOptions,
   MIN_SERVER_VERSION,
   olderThan,
   resolvePythonPath,
-  uvInstaller,
   uvToolPython,
   type LaunchSettings,
   type ServerSettings,
 } from './serverOptions';
+import { ensureUv, locateUv, runUv } from './uvTasks';
 
 const SECTION = 'opencrbasic';
 const LANGUAGE_ID = 'crbasic';
@@ -48,6 +47,7 @@ const CONFIGURATION_NOTIFICATION = 'workspace/didChangeConfiguration';
 const INSTALL_ACTION = 'Install server with uv';
 const INSTALL_UV_ACTION = 'Install uv and server';
 const UPGRADE_ACTION = 'Upgrade server with uv';
+const RETRY_ACTION = 'Retry';
 const GUIDE_ACTION = 'Setup guide';
 const GUIDE_URL = 'https://github.com/UtrechtUniversity/open-crbasic-vsix#readme';
 
@@ -148,23 +148,34 @@ export function deactivate(): Thenable<void> {
   return lifecycle.deactivate();
 }
 
-// The install is offered only when nothing points at a server: no pythonPath set and no uv tool install.
+// The install is offered only when nothing points at a server: no pythonPath set and no uv tool
+// install. One offer or install at a time: a start that fails while one is pending, or while the
+// install runs, adds no second notification, so the install cannot be started twice.
+let installPending = false;
 async function offerInstall(message: string): Promise<void> {
   const config = vscode.workspace.getConfiguration(SECTION);
   const offer = configuredPythonPath(config) === undefined && !existsSync(uvToolPython(process.env, process.platform, homedir()));
-  const uv = offer ? locateUv() : undefined;
-  const install = uv ? INSTALL_ACTION : INSTALL_UV_ACTION;
-  const actions = offer ? [install, GUIDE_ACTION] : [GUIDE_ACTION];
-  const text = !offer
-    ? `opencrbasic: language server failed to start (${message}). Check opencrbasic.pythonPath.`
-    : uv
-      ? 'opencrbasic: the language server is not installed. Install it with uv (`uv tool install "opencrbasic[lsp]"`)?'
-      : 'opencrbasic: the language server is not installed, and neither is uv. Download and run the uv installer from astral.sh, then install the server with uv?';
-  const choice = await vscode.window.showErrorMessage(text, ...actions);
-  if (choice === install) {
-    await installServer(uv);
-  } else if (choice === GUIDE_ACTION) {
-    await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
+  if (offer && installPending) {
+    return;
+  }
+  installPending = offer;
+  try {
+    const uv = offer ? locateUv() : undefined;
+    const install = uv ? INSTALL_ACTION : INSTALL_UV_ACTION;
+    const actions = offer ? [install, GUIDE_ACTION] : [GUIDE_ACTION];
+    const text = !offer
+      ? `opencrbasic: language server failed to start (${message}). Check opencrbasic.pythonPath.`
+      : uv
+        ? 'opencrbasic: the language server is not installed. Install it with uv (`uv tool install "opencrbasic[lsp]"`)?'
+        : 'opencrbasic: the language server is not installed, and neither is uv. Download and run the uv installer from astral.sh, then install the server with uv?';
+    const choice = await vscode.window.showErrorMessage(text, ...actions);
+    if (choice === install) {
+      await installServer(uv);
+    } else if (choice === GUIDE_ACTION) {
+      await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
+    }
+  } finally {
+    installPending = false;
   }
 }
 
@@ -192,63 +203,41 @@ async function offerUpgrade(version: string | undefined): Promise<void> {
   if ((await vscode.window.showWarningMessage(text, UPGRADE_ACTION)) !== UPGRADE_ACTION) {
     return;
   }
-  if ((await runTask('upgrade opencrbasic', uv, ['tool', 'upgrade', 'opencrbasic'])) !== 0) {
-    return installFailed('upgrading the server with uv failed');
+  try {
+    await runUv(uv, 'upgrade opencrbasic', ['tool', 'upgrade', 'opencrbasic'], 'upgrading the server with uv failed');
+  } catch (err) {
+    return installFailed(err);
   }
   output?.info('opencrbasic upgraded with uv; restarting the server');
   await restartClient();
 }
 
-function locateUv(): string | undefined {
-  return findUv(process.env, process.platform, homedir(), existsSync);
-}
-
-// Installs uv first when it is missing, then the server, each as a visible task; restarts on success.
+// Installs uv first when it is missing, then the server, each as a visible task. Success is uv's
+// exit status and the interpreter existing where the extension looks for it; then the server
+// restarts. A failure says so and offers to try again.
 async function installServer(uv: string | undefined): Promise<void> {
-  if (!uv) {
-    const installer = uvInstaller(process.platform);
-    if ((await runTask('install uv', installer.command, installer.args)) !== 0) {
-      return installFailed('installing uv failed');
+  const python = uvToolPython(process.env, process.platform, homedir());
+  try {
+    const found = await ensureUv(uv);
+    await runUv(found, 'install opencrbasic', ['tool', 'install', 'opencrbasic[lsp]'], 'installing the server with uv failed');
+    if (!existsSync(python)) {
+      throw new Error(`uv installed the server, but not at ${python}; set opencrbasic.pythonPath to its interpreter`);
     }
-    uv = locateUv();
-    if (!uv) {
-      return installFailed('uv was installed but not found');
-    }
-  }
-  if ((await runTask('install opencrbasic', uv, ['tool', 'install', 'opencrbasic[lsp]'])) !== 0) {
-    return installFailed('installing the server with uv failed');
+  } catch (err) {
+    return installFailed(err, () => installServer(locateUv()));
   }
   output?.info('opencrbasic installed with uv; restarting the server');
   await restartClient();
 }
 
-// No shell between: arguments such as `opencrbasic[lsp]` reach the process unquoted and unglobbed.
-function runTask(name: string, command: string, args: string[]): Promise<number | undefined> {
-  const task = new vscode.Task(
-    { type: 'process', task: name },
-    vscode.TaskScope.Global,
-    name,
-    SECTION,
-    new vscode.ProcessExecution(command, args),
-  );
-  return new Promise((resolve, reject) => {
-    const ended = vscode.tasks.onDidEndTaskProcess((event) => {
-      if (event.execution.task === task) {
-        ended.dispose();
-        resolve(event.exitCode);
-      }
-    });
-    vscode.tasks.executeTask(task).then(undefined, (err: unknown) => {
-      ended.dispose();
-      reject(err);
-    });
-  });
-}
-
-async function installFailed(what: string): Promise<void> {
+async function installFailed(err: unknown, retry?: () => Promise<void>): Promise<void> {
+  const what = err instanceof Error ? err.message : String(err);
   output?.error(what);
-  const choice = await vscode.window.showErrorMessage(`opencrbasic: ${what}; see the task output.`, GUIDE_ACTION);
-  if (choice) {
+  const actions = retry ? [RETRY_ACTION, GUIDE_ACTION] : [GUIDE_ACTION];
+  const choice = await vscode.window.showErrorMessage(`opencrbasic: ${what}; see the task output.`, ...actions);
+  if (choice === RETRY_ACTION && retry) {
+    await retry();
+  } else if (choice === GUIDE_ACTION) {
     await vscode.env.openExternal(vscode.Uri.parse(GUIDE_URL));
   }
 }
