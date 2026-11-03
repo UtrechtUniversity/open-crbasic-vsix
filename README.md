@@ -38,8 +38,9 @@ npm test
 uvx pre-commit install   # lint, compile and file hygiene before each commit
 ```
 
-`npm run lint` runs ESLint with typescript-eslint; `npm test` compiles (`tsc --strict`), then runs the `node:test` unit tests in `src/test/`: the launch-argument builder,
-the settings mapping, the configuration-change decisions and the client stop. They do not start VS Code.
+`npm run lint` runs ESLint with typescript-eslint; `npm test` compiles (`tsc --strict`), then runs
+the `node:test` unit tests in `src/test/` for the modules that need no `vscode` import. They do not
+start VS Code.
 
 ## Package and install
 
@@ -57,9 +58,8 @@ code --install-extension opencrbasic-<version>.vsix
 CI builds the same package on every push and publishes it to the Visual Studio Marketplace from
 `main` (see "Releasing").
 
-The extension does not include the Python server. Install opencrbasic with the `lsp` extra and set
-`opencrbasic.pythonPath` to that interpreter. Installing the VSIX into VS Code is a host check; it
-has not been run in the build container.
+The package includes neither the Python server nor `oln`; the extension offers to install both with
+uv (see "Quick start" and "Logger actions").
 
 ## Development launch
 

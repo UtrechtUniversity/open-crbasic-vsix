@@ -13,4 +13,3 @@ AGENTS.md
 CLAUDE.md
 .pre-commit-config.yaml
 .github/**
-.git-blame-ignore-revs
