@@ -1,14 +1,13 @@
 .vscode/**
 src/**
-out/test/**
+out/**
+node_modules/**
 **/*.map
 tsconfig.json
 package-lock.json
 .gitignore
 .vscodeignore
 *.vsix
-node_modules/**/*.d.ts
-node_modules/**/*.tsbuildinfo
 eslint.config.mjs
 AGENTS.md
 CLAUDE.md
