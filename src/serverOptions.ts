@@ -35,16 +35,43 @@ export function buildServerLaunch(cfg: LaunchSettings, baseEnv: NodeJS.ProcessEn
   };
 }
 
-// Interpreter that `uv tool install "opencrbasic[lsp]"` creates, in uv's tool directory: UV_TOOL_DIR,
-// else $XDG_DATA_HOME/uv/tools or ~/.local/share/uv/tools, or %APPDATA%\uv\data\tools on Windows.
-export function uvToolPython(env: NodeJS.ProcessEnv, platform: NodeJS.Platform, home: string): string {
+// An executable in the environment that `uv tool install <tool>` creates in uv's tool directory:
+// UV_TOOL_DIR, else $XDG_DATA_HOME/uv/tools or ~/.local/share/uv/tools, or %APPDATA%\uv\data\tools
+// on Windows.
+function uvToolExecutable(tool: string, name: string, env: NodeJS.ProcessEnv, platform: NodeJS.Platform, home: string): string {
   if (platform === 'win32') {
     const dir = env.UV_TOOL_DIR ?? path.win32.join(env.APPDATA ?? path.win32.join(home, 'AppData', 'Roaming'), 'uv', 'data', 'tools');
-    return path.win32.join(dir, 'opencrbasic', 'Scripts', 'python.exe');
+    return path.win32.join(dir, tool, 'Scripts', `${name}.exe`);
   }
   const dir = env.UV_TOOL_DIR ?? path.posix.join(env.XDG_DATA_HOME ?? path.posix.join(home, '.local', 'share'), 'uv', 'tools');
-  return path.posix.join(dir, 'opencrbasic', 'bin', 'python');
+  return path.posix.join(dir, tool, 'bin', name);
 }
+
+// Interpreter of `uv tool install "opencrbasic[lsp]"`.
+export function uvToolPython(env: NodeJS.ProcessEnv, platform: NodeJS.Platform, home: string): string {
+  return uvToolExecutable('opencrbasic', 'python', env, platform, home);
+}
+
+// `oln` of `uv tool install openloggernet`.
+export function uvToolOln(env: NodeJS.ProcessEnv, platform: NodeJS.Platform, home: string): string {
+  return uvToolExecutable('openloggernet', 'oln', env, platform, home);
+}
+
+// A command the user set wins; otherwise the uv tool install's `oln` if present, else `oln` on PATH.
+export function resolveOlnCommand(configured: string[] | undefined, uvOln: string, exists: (file: string) => boolean): string[] {
+  if (configured?.length) {
+    return [...configured];
+  }
+  return [exists(uvOln) ? uvOln : 'oln'];
+}
+
+// The version in `oln --version` output (`oln 0.3.0`), or undefined.
+export function parseOlnVersion(stdout: string): string | undefined {
+  return /^oln\s+(\d+(?:\.\d+)*\S*)/m.exec(stdout.trim())?.[1];
+}
+
+// The oldest open-loggernet whose `oln` this extension drives (0.3.0: `oln --version`).
+export const MIN_OLN_VERSION = '0.3.0';
 
 // The uv executable: on PATH, else where Astral's installer puts it (UV_INSTALL_DIR, XDG_BIN_HOME,
 // else ~/.local/bin; %USERPROFILE%\.local\bin on Windows), which a fresh install has not yet added to PATH.

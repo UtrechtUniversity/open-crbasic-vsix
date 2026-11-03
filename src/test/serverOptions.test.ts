@@ -5,8 +5,11 @@ import {
   findUv,
   initializationOptions,
   olderThan,
+  parseOlnVersion,
+  resolveOlnCommand,
   resolvePythonPath,
   uvInstaller,
+  uvToolOln,
   uvToolPython,
 } from '../serverOptions';
 
@@ -138,4 +141,27 @@ test('olderThan compares release numbers and ignores unknown versions', () => {
   assert.equal(olderThan('2.0.0', '1.1.0'), false);
   assert.equal(olderThan(undefined, '1.1.0'), false);
   assert.equal(olderThan('unknown', '1.1.0'), false);
+});
+
+test('uvToolOln is the oln of the openloggernet tool environment', () => {
+  assert.equal(
+    uvToolOln({ APPDATA: 'C:\\Users\\u\\AppData\\Roaming' }, 'win32', 'C:\\Users\\u'),
+    'C:\\Users\\u\\AppData\\Roaming\\uv\\data\\tools\\openloggernet\\Scripts\\oln.exe',
+  );
+  assert.equal(uvToolOln({}, 'linux', '/home/u'), '/home/u/.local/share/uv/tools/openloggernet/bin/oln');
+  assert.equal(uvToolOln({ UV_TOOL_DIR: '/t' }, 'darwin', '/home/u'), '/t/openloggernet/bin/oln');
+});
+
+test('resolveOlnCommand prefers the configured command, then the uv tool, then PATH', () => {
+  const uvOln = '/t/openloggernet/bin/oln';
+  assert.deepEqual(resolveOlnCommand(['uv', 'run', 'oln'], uvOln, () => true), ['uv', 'run', 'oln']);
+  assert.deepEqual(resolveOlnCommand(undefined, uvOln, (f) => f === uvOln), [uvOln]);
+  assert.deepEqual(resolveOlnCommand([], uvOln, () => false), ['oln']);
+});
+
+test('parseOlnVersion reads `oln --version` and nothing else', () => {
+  assert.equal(parseOlnVersion('oln 0.3.0\n'), '0.3.0');
+  assert.equal(parseOlnVersion('oln 0.3.1.dev4'), '0.3.1.dev4');
+  assert.equal(parseOlnVersion('usage: oln [-h] ...'), undefined);
+  assert.equal(parseOlnVersion(''), undefined);
 });

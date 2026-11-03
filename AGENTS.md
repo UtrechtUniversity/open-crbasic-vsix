@@ -2,9 +2,9 @@
 
 The VS Code extension for CRBasic, a client of the opencrbasic language server
 ([open-crbasic](https://github.com/UtrechtUniversity/open-crbasic), `python -m opencrbasic.lsp`).
-It is MIT licensed and published to the Visual Studio Marketplace. Later it will also offer
-logger actions (flash a program, collect data) backed by
-[open-loggernet](https://github.com/UtrechtUniversity/open-loggernet).
+It is MIT licensed and published to the Visual Studio Marketplace. Its logger actions (send a
+program, collect data) run [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet)'s
+`oln`.
 
 Priorities: correctness, evidence, simplicity, minimal scope, maintainability.
 
