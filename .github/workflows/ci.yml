@@ -22,6 +22,8 @@ jobs:
       - run: npm run lint
       - run: npm test
       - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: false  # no Python lockfile here; only uvx pre-commit
       - run: uvx pre-commit run --all-files --show-diff-on-failure
       - run: npx vsce package --out opencrbasic.vsix
       - uses: actions/upload-artifact@v7.0.2
