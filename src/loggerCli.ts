@@ -26,6 +26,35 @@ export interface ProgramInfo {
   compile_time: string;
   station_name?: string;
   state?: string;
+  // From `oln info`: the newest OS open-loggernet knows of for this model.
+  os_latest?: { latest: string | null; url: string | null; outdated: boolean };
+}
+
+// `oln flash --json`: what was sent, then the program statistics read back.
+export interface FlashResult extends ProgramInfo {
+  program: string;
+  includes: string[];
+  skipped: string[];
+}
+
+export interface ClockInfo {
+  logger: string;
+  host: string;
+  offset: number;
+  logger_after?: string;
+  offset_after?: number;
+}
+
+// One row of `oln --json settings`: by name from the logger itself, or by number from DevConfig's
+// library (`id` set, `name` possibly empty).
+export interface SettingRow {
+  id?: number | null;
+  name: string;
+  value: unknown;
+  read_only: boolean;
+  type?: string;
+  range?: string;
+  error?: string;
 }
 
 export interface TableField {
@@ -59,7 +88,7 @@ export interface WatchRow {
   values: Record<string, unknown>;
 }
 
-export type CollectFormat = 'toa5' | 'csv' | 'jsonl';
+export type CollectFormat = 'toa5' | 'tob1' | 'csv' | 'jsonl';
 
 // Arguments for one `oln` call: the logger selection and `--json` go before the subcommand.
 export function olnArgs(target: LoggerTarget, command: readonly string[]): string[] {
@@ -76,6 +105,11 @@ export function olnArgs(target: LoggerTarget, command: readonly string[]): strin
 export const commands = {
   ports: (): string[] => ['ports'],
   info: (): string[] => ['info'],
+  flash: (program: string): string[] => ['flash', program, '--no-compile'],
+  settings: (): string[] => ['settings'],
+  setSetting: (name: string, value: string): string[] => ['settings', 'set', `${name}=${value}`],
+  setValue: (spec: string, value: string): string[] => ['set', `${spec}=${value}`],
+  sendOs: (image: string): string[] => ['os', image],
   status: (): string[] => ['status'],
   tables: (): string[] => ['tables'],
   files: (): string[] => ['files', 'ls'],
@@ -85,7 +119,7 @@ export const commands = {
   resume: (): string[] => ['program', 'resume'],
   put: (local: string, remote?: string): string[] => ['files', 'put', local, ...(remote ? [remote] : [])],
   get: (remote: string, local: string): string[] => ['files', 'get', remote, '-o', local],
-  remove: (remote: string): string[] => ['files', 'rm', remote],
+  remove: (...remote: string[]): string[] => ['files', 'rm', ...remote],
   collect: (table: string, output: string, format: CollectFormat, count?: number): string[] => [
     'collect',
     table,
@@ -165,4 +199,48 @@ export function compileFailed(result: string): boolean {
 
 export function describeTarget(target: LoggerTarget): string {
   return target.port ?? target.model ?? 'the attached logger';
+}
+
+// The language server's compiler output (CR6Comp's wording) reports a compiled program.
+export function buildSucceeded(output: string): boolean {
+  return /Compiled in/.test(output) && !/Compile Failed/i.test(output);
+}
+
+// A clock this far off the host's UTC is offered a sync.
+export const CLOCK_TOLERANCE_SECONDS = 1;
+
+export function clockOutOfSync(offset: number): boolean {
+  return Math.abs(offset) > CLOCK_TOLERANCE_SECONDS;
+}
+
+// "3.2 s behind", "2 h 5 min ahead of", "248 d 1 h behind": a logger clock offset for people.
+export function describeOffset(offset: number): string {
+  const s = Math.abs(offset);
+  const amount = s < 60 ? `${s.toFixed(1)} s`
+    : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`
+      : s < 86400 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`
+        : `${Math.floor(s / 86400)} d ${Math.round((s % 86400) / 3600)} h`;
+  return `${amount} ${offset < 0 ? 'behind' : 'ahead of'}`;
+}
+
+export const TABLE_FORMATS: ReadonlyArray<{ format: CollectFormat; label: string; detail: string; extension: string }> = [
+  { format: 'toa5', label: 'TOA5 (.dat)', detail: "LoggerNet's ASCII table format", extension: 'dat' },
+  { format: 'tob1', label: 'TOB1 (.dat)', detail: "LoggerNet's binary table format", extension: 'dat' },
+  { format: 'csv', label: 'CSV (.csv)', detail: 'One header line, then one row per record', extension: 'csv' },
+];
+
+// LoggerNet's default name for a collected table, `<station>_<table>.dat`, safe as a file name.
+export function tableFileName(station: string, table: string, extension: string): string {
+  const safe = (text: string) => text.replace(/[^\w.-]+/g, '_');
+  return `${station ? `${safe(station)}_` : ''}${safe(table)}.${extension}`;
+}
+
+// Settings that hold a secret are not shown in the tree.
+export function isSecretSetting(name: string): boolean {
+  return /password|privatekey|encryptionkey|eappassword/i.test(name);
+}
+
+// A program file the logger can compile and run (not a .crb library or a data file).
+export function isProgramFile(name: string): boolean {
+  return /\.(cr6|cr1x|cr300|cr350|cr8|cr1)$/i.test(name);
 }

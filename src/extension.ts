@@ -96,6 +96,19 @@ const outputProvider: vscode.TextDocumentContentProvider = {
   },
 };
 
+// The language server's compiler output for `uri`, for the Logger: Build commands.
+async function compileWithServer(uri: vscode.Uri): Promise<string> {
+  const current = lifecycle.client;
+  if (!current || !current.isRunning()) {
+    throw new Error('the CRBasic language server is not running, so the program cannot be built');
+  }
+  const text = await current.sendRequest(ExecuteCommandRequest.type, {
+    command: OUTPUT_COMMANDS.compilerOutput.serverCommand,
+    arguments: [uri.toString()],
+  });
+  return typeof text === 'string' ? text : '';
+}
+
 async function openOutput(kind: OutputKind): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== LANGUAGE_ID || editor.document.uri.scheme !== 'file') {
@@ -140,7 +153,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
   );
-  registerLogger(context, output);
+  registerLogger(context, output, compileWithServer);
   void restartClient();
 }
 

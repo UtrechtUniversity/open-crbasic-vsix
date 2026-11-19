@@ -70,8 +70,9 @@ export function parseOlnVersion(stdout: string): string | undefined {
   return /^oln\s+(\d+(?:\.\d+)*\S*)/m.exec(stdout.trim())?.[1];
 }
 
-// The oldest open-loggernet whose `oln` this extension drives (0.3.0: `oln --version`).
-export const MIN_OLN_VERSION = '0.3.0';
+// The oldest open-loggernet whose `oln` this extension drives (0.4.0: `flash --json`, TOB1, settings by
+// name and the OS check in `oln info`).
+export const MIN_OLN_VERSION = '0.4.0';
 
 // The uv executable: on PATH, else where Astral's installer puts it (UV_INSTALL_DIR, XDG_BIN_HOME,
 // else ~/.local/bin; %USERPROFILE%\.local\bin on Windows), which a fresh install has not yet added to PATH.

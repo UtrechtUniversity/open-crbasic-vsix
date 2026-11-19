@@ -3,7 +3,7 @@
   "displayName": "CRBasic (opencrbasic)",
   "description": "CRBasic language support for CR6 programs, backed by the opencrbasic language server.",
   "publisher": "OttodeVisserUU",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -53,7 +53,11 @@
           ".CR350",
           ".cr350"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "media/icons/light/crbasic-file.svg",
+          "dark": "media/icons/dark/crbasic-file.svg"
+        }
       }
     ],
     "grammars": [
@@ -82,7 +86,11 @@
       },
       {
         "command": "openloggernet.selectLogger",
-        "title": "Logger: Select Logger"
+        "title": "Logger: Select Serial Port...",
+        "icon": {
+          "light": "media/icons/light/port.svg",
+          "dark": "media/icons/dark/port.svg"
+        }
       },
       {
         "command": "openloggernet.showInfo",
@@ -90,8 +98,11 @@
       },
       {
         "command": "openloggernet.sendProgram",
-        "title": "Logger: Send Program and Run",
-        "icon": "$(cloud-upload)"
+        "title": "Logger: Send and Run",
+        "icon": {
+          "light": "media/icons/light/send-run.svg",
+          "dark": "media/icons/dark/send-run.svg"
+        }
       },
       {
         "command": "openloggernet.collect",
@@ -107,7 +118,163 @@
       },
       {
         "command": "openloggernet.setClock",
-        "title": "Logger: Set Clock to UTC"
+        "title": "Logger: Sync Clock to UTC",
+        "icon": {
+          "light": "media/icons/light/sync-clock.svg",
+          "dark": "media/icons/dark/sync-clock.svg"
+        }
+      },
+      {
+        "command": "openloggernet.build",
+        "title": "Logger: Build",
+        "icon": {
+          "light": "media/icons/light/build.svg",
+          "dark": "media/icons/dark/build.svg"
+        }
+      },
+      {
+        "command": "openloggernet.buildSendRun",
+        "title": "Logger: Build, Send and Run",
+        "icon": {
+          "light": "media/icons/light/build-send-run.svg",
+          "dark": "media/icons/dark/build-send-run.svg"
+        }
+      },
+      {
+        "command": "openloggernet.buildSendRunMonitor",
+        "title": "Logger: Build, Send, Run and Monitor",
+        "icon": {
+          "light": "media/icons/light/build-send-run-monitor.svg",
+          "dark": "media/icons/dark/build-send-run-monitor.svg"
+        }
+      },
+      {
+        "command": "openloggernet.downloadTables",
+        "title": "Logger: Download Data Tables...",
+        "icon": {
+          "light": "media/icons/light/download-tables.svg",
+          "dark": "media/icons/dark/download-tables.svg"
+        }
+      },
+      {
+        "command": "openloggernet.downloadAllTables",
+        "title": "Logger: Download All Data Tables",
+        "icon": {
+          "light": "media/icons/light/download-tables.svg",
+          "dark": "media/icons/dark/download-tables.svg"
+        }
+      },
+      {
+        "command": "openloggernet.downloadTable",
+        "title": "Logger: Download Table",
+        "icon": {
+          "light": "media/icons/light/download.svg",
+          "dark": "media/icons/dark/download.svg"
+        }
+      },
+      {
+        "command": "openloggernet.updateOs",
+        "title": "Logger: Update Operating System...",
+        "icon": {
+          "light": "media/icons/light/update-os.svg",
+          "dark": "media/icons/dark/update-os.svg"
+        }
+      },
+      {
+        "command": "openloggernet.scan.station",
+        "title": "Logger: Scan Datalogger",
+        "icon": {
+          "light": "media/icons/light/refresh.svg",
+          "dark": "media/icons/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "openloggernet.scan.files",
+        "title": "Logger: Scan Files",
+        "icon": {
+          "light": "media/icons/light/refresh.svg",
+          "dark": "media/icons/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "openloggernet.scan.tables",
+        "title": "Logger: Scan Data Tables",
+        "icon": {
+          "light": "media/icons/light/refresh.svg",
+          "dark": "media/icons/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "openloggernet.scan.settings",
+        "title": "Logger: Scan Settings",
+        "icon": {
+          "light": "media/icons/light/refresh.svg",
+          "dark": "media/icons/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "openloggernet.connect",
+        "title": "Logger: Connect Live Values",
+        "icon": {
+          "light": "media/icons/light/connect.svg",
+          "dark": "media/icons/dark/connect.svg"
+        }
+      },
+      {
+        "command": "openloggernet.disconnect",
+        "title": "Logger: Disconnect Live Values",
+        "icon": {
+          "light": "media/icons/light/disconnect.svg",
+          "dark": "media/icons/dark/disconnect.svg"
+        }
+      },
+      {
+        "command": "openloggernet.uploadFiles",
+        "title": "Logger: Upload Files...",
+        "icon": {
+          "light": "media/icons/light/upload.svg",
+          "dark": "media/icons/dark/upload.svg"
+        }
+      },
+      {
+        "command": "openloggernet.downloadFiles",
+        "title": "Logger: Download File",
+        "icon": {
+          "light": "media/icons/light/download.svg",
+          "dark": "media/icons/dark/download.svg"
+        }
+      },
+      {
+        "command": "openloggernet.deleteFiles",
+        "title": "Logger: Delete File",
+        "icon": {
+          "light": "media/icons/light/delete.svg",
+          "dark": "media/icons/dark/delete.svg"
+        }
+      },
+      {
+        "command": "openloggernet.runFile",
+        "title": "Logger: Compile and Run File",
+        "icon": {
+          "light": "media/icons/light/run.svg",
+          "dark": "media/icons/dark/run.svg"
+        }
+      },
+      {
+        "command": "openloggernet.setVariable",
+        "title": "Logger: Set Value...",
+        "icon": {
+          "light": "media/icons/light/edit.svg",
+          "dark": "media/icons/dark/edit.svg"
+        }
+      },
+      {
+        "command": "openloggernet.editSetting",
+        "title": "Logger: Change Setting...",
+        "icon": {
+          "light": "media/icons/light/edit.svg",
+          "dark": "media/icons/dark/edit.svg"
+        }
       }
     ],
     "configuration": {
@@ -266,18 +433,259 @@
           "when": "editorLangId == crbasic"
         },
         {
+          "command": "openloggernet.build",
+          "when": "editorLangId == crbasic"
+        },
+        {
+          "command": "openloggernet.buildSendRun",
+          "when": "editorLangId == crbasic"
+        },
+        {
+          "command": "openloggernet.buildSendRunMonitor",
+          "when": "editorLangId == crbasic"
+        },
+        {
           "command": "openloggernet.sendProgram",
           "when": "editorLangId == crbasic"
+        },
+        {
+          "command": "openloggernet.downloadTable",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.downloadFiles",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.deleteFiles",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.runFile",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.setVariable",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.editSetting",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.downloadAllTables",
+          "when": "false"
+        },
+        {
+          "command": "openloggernet.disconnect",
+          "when": "openloggernet.connected"
         }
       ],
       "editor/title": [
         {
+          "command": "openloggernet.build",
+          "when": "editorLangId == crbasic",
+          "group": "navigation@1"
+        },
+        {
+          "command": "openloggernet.buildSendRun",
+          "when": "editorLangId == crbasic",
+          "group": "navigation@2"
+        },
+        {
+          "command": "openloggernet.buildSendRunMonitor",
+          "when": "editorLangId == crbasic",
+          "group": "navigation@3"
+        },
+        {
           "command": "openloggernet.sendProgram",
           "when": "editorLangId == crbasic",
+          "group": "navigation@4"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "openloggernet.buildSendRun",
+          "when": "resourceLangId == crbasic",
+          "group": "openloggernet@1"
+        },
+        {
+          "command": "openloggernet.sendProgram",
+          "when": "resourceLangId == crbasic",
+          "group": "openloggernet@2"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "openloggernet.scan.station",
+          "when": "view == openloggernet.station && openloggernet.filled.station",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.selectLogger",
+          "when": "view == openloggernet.station",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.setClock",
+          "when": "view == openloggernet.station && openloggernet.filled.station",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.uploadFiles",
+          "when": "view == openloggernet.files",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.scan.files",
+          "when": "view == openloggernet.files && openloggernet.filled.files",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.connect",
+          "when": "view == openloggernet.public && !openloggernet.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.disconnect",
+          "when": "view == openloggernet.public && openloggernet.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.downloadAllTables",
+          "when": "view == openloggernet.tables && openloggernet.filled.tables",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.scan.tables",
+          "when": "view == openloggernet.tables && openloggernet.filled.tables",
+          "group": "navigation"
+        },
+        {
+          "command": "openloggernet.scan.settings",
+          "when": "view == openloggernet.settings && openloggernet.filled.settings",
           "group": "navigation"
         }
+      ],
+      "view/item/context": [
+        {
+          "command": "openloggernet.updateOs",
+          "when": "view == openloggernet.station && viewItem =~ /^osOutdated$/",
+          "group": "inline"
+        },
+        {
+          "command": "openloggernet.setClock",
+          "when": "view == openloggernet.station && viewItem =~ /^clockOff$/",
+          "group": "inline"
+        },
+        {
+          "command": "openloggernet.selectLogger",
+          "when": "view == openloggernet.station && viewItem =~ /^port$/",
+          "group": "inline"
+        },
+        {
+          "command": "openloggernet.runFile",
+          "when": "view == openloggernet.files && viewItem =~ /^programFile$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "openloggernet.downloadFiles",
+          "when": "view == openloggernet.files && viewItem =~ /^(programF|f)ile$/",
+          "group": "inline@2"
+        },
+        {
+          "command": "openloggernet.deleteFiles",
+          "when": "view == openloggernet.files && viewItem =~ /^(programF|f)ile$/",
+          "group": "inline@3"
+        },
+        {
+          "command": "openloggernet.runFile",
+          "when": "view == openloggernet.files && viewItem =~ /^programFile$/",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "openloggernet.downloadFiles",
+          "when": "view == openloggernet.files && viewItem =~ /^(programF|f)ile$/",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "openloggernet.deleteFiles",
+          "when": "view == openloggernet.files && viewItem =~ /^(programF|f)ile$/",
+          "group": "1_actions@3"
+        },
+        {
+          "command": "openloggernet.downloadTable",
+          "when": "view == openloggernet.tables && viewItem =~ /^table$/",
+          "group": "inline"
+        },
+        {
+          "command": "openloggernet.setVariable",
+          "when": "view == openloggernet.public && viewItem =~ /^variable$/",
+          "group": "inline"
+        },
+        {
+          "command": "openloggernet.editSetting",
+          "when": "view == openloggernet.settings && viewItem =~ /^setting$/",
+          "group": "inline"
+        }
       ]
-    }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openloggernet",
+          "title": "Logger",
+          "icon": "media/logger.svg"
+        }
+      ]
+    },
+    "views": {
+      "openloggernet": [
+        {
+          "id": "openloggernet.station",
+          "name": "Datalogger"
+        },
+        {
+          "id": "openloggernet.files",
+          "name": "Program and Files"
+        },
+        {
+          "id": "openloggernet.public",
+          "name": "Live Values (Public)"
+        },
+        {
+          "id": "openloggernet.tables",
+          "name": "Data Tables"
+        },
+        {
+          "id": "openloggernet.settings",
+          "name": "Device Settings",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "openloggernet.station",
+        "contents": "Read the model, serial number, OS version, program and clock of the logger. Each scan opens the serial port only for as long as it takes.\n[$(search) Scan](command:openloggernet.scan.station)\n[Select Serial Port](command:openloggernet.selectLogger)"
+      },
+      {
+        "view": "openloggernet.files",
+        "contents": "The running program and the files on the logger.\n[$(search) Scan](command:openloggernet.scan.files)\n[Upload Files...](command:openloggernet.uploadFiles)"
+      },
+      {
+        "view": "openloggernet.public",
+        "contents": "Live values of the Public table, read every second. Connecting holds the serial port until you disconnect; other logger actions pause it while they run.\n[$(plug) Connect](command:openloggernet.connect)"
+      },
+      {
+        "view": "openloggernet.tables",
+        "contents": "The data tables of the running program.\n[$(search) Scan](command:openloggernet.scan.tables)\n[Download Data Tables...](command:openloggernet.downloadTables)"
+      },
+      {
+        "view": "openloggernet.settings",
+        "contents": "The logger's device settings, read and changed by name.\n[$(search) Scan](command:openloggernet.scan.settings)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile && npm run bundle -- --minify",

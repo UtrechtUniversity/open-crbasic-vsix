@@ -77,12 +77,29 @@ Backed by open-loggernet's `oln`, these talk to a logger attached by USB. Before
 session the extension checks `oln --version` and offers to install or upgrade open-loggernet with
 `uv tool install openloggernet`.
 
+The **Logger** view in the Activity Bar has five sections. Each starts empty: **Scan** reads it once
+and opens the serial port only for that read, after which the section's title shows Refresh.
+
+| Section | What it shows and does |
+|---|---|
+| Datalogger | Port (click to pick another logger, or Automatic), model, serial number, station name, OS version, program, compile result and clock. An OS older than the newest one open-loggernet knows of, and a clock more than 1 s off UTC, are flagged and offer Update OS (download page, or send a `.obj`) and Sync Clock. |
+| Program and Files | The running program and the files on the logger. Upload files; download, delete or compile-and-run the selected ones (several at once for download and delete). |
+| Live Values (Public) | The Public table, read every second. Connect holds the serial port until Disconnect; other logger actions pause it while they run. Click a value to change it. |
+| Data Tables | The running program's tables: download one, all, or a selection. |
+| Device Settings | The logger's settings by name; click one to change it. Secrets are masked. |
+
 | Command | What it does |
 |---|---|
-| Logger: Open Panel | Station info, clock, tables, files, live values and terminal in one view. |
-| Logger: Send Program and Run | Sends the open program to `CPU:`, compiles and runs it, reports the compile result. Also the upload button in the editor title bar. |
-| Logger: Collect Table... | Collects a table to a TOA5 `.dat`, CSV or JSON Lines file. |
-| Logger: Select Logger, Show Station Info, Stop Program (keep data), Resume Program, Set Clock to UTC | As named. |
+| Logger: Build | Compiles the open program with the language server and reports the result. |
+| Logger: Build, Send and Run | Builds, then sends the program **and the library files it includes** (found next to it) to `CPU:`, compiles and runs it on the logger. |
+| Logger: Build, Send, Run and Monitor | The same, then connects Live Values. |
+| Logger: Send and Run | Sends and runs without building first. |
+| Logger: Download Data Tables... | Picks tables (all data tables preselected) and a format, TOA5 or TOB1 `.dat` or CSV, and writes `<station>_<table>.<ext>` files to the workspace folder. |
+| Logger: Open Panel | Station info, clock, tables, files, live values and terminal in one webview. |
+| Logger: Collect Table... | Collects one table to a file of your choice. |
+| Logger: Select Serial Port..., Show Station Info, Stop Program (keep data), Resume Program, Sync Clock to UTC, Update Operating System... | As named. |
+
+The four build and send commands are also buttons in the editor title bar of a CRBasic file.
 
 Settings: `openloggernet.command` (how `oln` is run; default: the uv tool install's `oln`, else `oln`
 on PATH) and `openloggernet.port` (serial port, e.g. `COM5` or `/dev/ttyACM0`; empty: the selected
