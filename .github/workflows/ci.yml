@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: marketplace
     permissions:
-      contents: read
+      contents: write  # GitHub release
       id-token: write
     steps:
       - uses: actions/checkout@v7
@@ -46,4 +46,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vsce publish --oidc --skip-duplicate
+      - run: npx vsce package --out "opencrbasic-$(node -p 'require("./package.json").version').vsix"
+      - run: npx vsce publish --oidc --skip-duplicate --packagePath opencrbasic-*.vsix
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p 'require("./package.json").version')"
+          gh release view "$tag" >/dev/null 2>&1 ||
+            gh release create "$tag" opencrbasic-*.vsix --target "$GITHUB_SHA" --generate-notes

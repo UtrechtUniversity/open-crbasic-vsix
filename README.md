@@ -1,113 +1,118 @@
 # CRBasic for VS Code (opencrbasic)
 
-A VS Code client for the opencrbasic language server (`python -m opencrbasic.lsp`). It registers the
-`crbasic` language for CRBasic programs and starts the server over stdio. The server provides
-diagnostics, hover, completion, signature help, outline, folding, navigation, semantic tokens,
-rename, formatting, quick fixes and the syntax highlighting of the CR6 catalog.
+Language support for CRBasic programs (Campbell Scientific dataloggers) in VS Code, backed by the
+[opencrbasic](https://github.com/UtrechtUniversity/open-crbasic) language server. The extension
+registers the `crbasic` language, starts the server over stdio, and adds syntax highlighting. The
+server provides diagnostics, hover, completion, signature help, outline, folding, navigation,
+semantic tokens, rename, formatting and quick fixes. Optional logger commands (below) talk to a
+datalogger through [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet).
 
-Setup, every setting with its default, the feature list with its limits, the help directory and the
-host-tested status are in [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md) of [opencrbasic](https://github.com/UtrechtUniversity/open-crbasic).
-MIT licensed; not affiliated with Campbell Scientific.
+Open source (MIT). **Not affiliated with, endorsed by or supported by Campbell Scientific.**
+Setup details, every server setting and the feature limits are in the
+[user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md).
 
-## Quick start
+## Install
 
-1. Install this extension from the Marketplace ("CRBasic (opencrbasic)").
-2. Open a CRBasic file. If the server is missing, the extension offers to install it with
-   `uv tool install "opencrbasic[lsp]"`; uv fetches Python 3.15 itself. Without
-   [uv](https://docs.astral.sh/uv/), it offers to run Astral's uv installer first (which also adds
-   uv to your shell's PATH). A uv tool install is found without any setting.
-   A server older than the extension expects (`MIN_SERVER_VERSION` in `src/serverOptions.ts`)
-   still starts; the extension then offers `uv tool upgrade opencrbasic` once per session.
-3. With another environment (`pip install "opencrbasic[lsp]"` into any Python 3.15+), set
-   `opencrbasic.pythonPath` to its interpreter, as an absolute path.
+- **Marketplace:** [OttodeVisserUU.opencrbasic](https://marketplace.visualstudio.com/items?itemName=OttodeVisserUU.opencrbasic),
+  or search "CRBasic (opencrbasic)" in the Extensions view.
+- **From a `.vsix`:** download `opencrbasic-<version>.vsix` from
+  [GitHub Releases](https://github.com/UtrechtUniversity/open-crbasic-vsix/releases), then run
+  `code --install-extension opencrbasic-<version>.vsix` or use *Extensions: Install from VSIX...*.
 
-## Requirements
+Requires VS Code 1.95 or newer. The extension needs a trusted workspace (it runs a Python server).
 
-- Node.js with npm (the macOS host run at `1b01311d` used Node 26.0.0 and npm 11.12.1) and VS Code
-  1.95 or newer (the host run used VS Code 1.141.0).
-- A Python 3.15+ environment with `opencrbasic[lsp]`; see section 2 of [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md).
-- `opencrbasic.pythonPath` set to that environment's interpreter, as an absolute path, unless it is
-  a `uv tool` install, which is found on its own.
+## Prerequisites
 
-## Build and test
+The language server is the `opencrbasic` Python package with its `lsp` extra, which needs
+**Python 3.15 or newer**. The extension is only the client; it does not bundle the server.
+
+- **Easiest:** open a CRBasic file. If no server is found, the extension offers to run
+  `uv tool install "opencrbasic[lsp]"` ([uv](https://docs.astral.sh/uv/) fetches Python itself) and,
+  if uv is missing, to run Astral's uv installer first. A uv tool install is found without any
+  setting. If the server is older than the extension expects, it offers `uv tool upgrade opencrbasic`.
+- **Own environment:** `pip install "opencrbasic[lsp]"` into any Python 3.15+, then set
+  `opencrbasic.pythonPath` to its interpreter (absolute path).
+
+## Features
+
+- Syntax highlighting for CRBasic, generated from the CR6 instruction catalog.
+- Diagnostics from the opencrbasic checker, hover, completion, signature help, outline, folding,
+  navigation, semantic tokens, rename, formatting, quick fixes.
+- Parameter-name inlay hints (needs `opencrbasic.helpDirectory`).
+- Commands: `opencrbasic: Restart Server`, `opencrbasic: Show Compiler Output`,
+  `opencrbasic: Show Table Fields`.
+- File types: `.CR6`, `.crb`, `.CR1X`, `.CR300`, `.CR350` (any case).
+- Optional logger commands, see below.
+
+## Settings
+
+Server settings (`opencrbasic.*`; `pythonPath`, `serverArgs` and `serverEnv` restart the server, the
+rest apply live):
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `pythonPath` | `python3` | Interpreter that runs the server. Unset: the uv tool install's interpreter if present. |
+| `serverArgs` | `["-m", "opencrbasic.lsp"]` | Arguments passed to the interpreter. |
+| `serverEnv` | `{}` | Extra environment variables for the server (e.g. `PYTHONPATH` for a dev checkout). |
+| `entries` | `["**/*.CR6"]` | Workspace-relative globs of entry programs, analyzed with their includes. |
+| `exclude` | `[]` | Globs removed from the entries. |
+| `logger` | `cr6` | Logger profile: `cr6`, `cr1000x`, `cr300`, `cr350`. |
+| `encoding` | `utf-8` | Text encoding for files and unsaved content. |
+| `debounceMs` | `300` | Delay after the last edit before analysis. |
+| `analysisTimeoutMs` | `10000` | Per-analysis time limit. |
+| `maxFileBytes` | `2097152` | Larger files are not analyzed (a warning is shown). |
+| `maxQueuedJobs` | `64` | Entry programs analyzed at once; the rest wait. |
+| `maxCacheMb` | `256` | Memory for parsed programs kept for hover, completion and navigation. |
+| `checks` | `{}` | Severity per check code, e.g. `{"OCB005": "off"}`; overrides `opencrbasic.toml`. |
+| `coverageNotices` | `false` | Hints where the reference compiler has rules opencrbasic does not model. |
+| `helpDirectory` | `""` | Directory with extracted CRBasic help (`Instructions/*.htm`, `parameters/*.htm`). Empty: no help text in hover and signature help. |
+| `inlayHints.parameterNames` | `true` | Parameter-name hints; needs `helpDirectory`. |
+| `trace.server` | `off` | `off`, `messages` or `verbose` client-server trace in the output channel. |
+
+The extension does not ship Campbell's help files; point `helpDirectory` at your own extracted copy.
+
+## Logger commands (optional)
+
+Backed by open-loggernet's `oln`, these talk to a logger attached by USB. Before the first use in a
+session the extension checks `oln --version` and offers to install or upgrade open-loggernet with
+`uv tool install openloggernet`.
+
+| Command | What it does |
+|---|---|
+| Logger: Open Panel | Station info, clock, tables, files, live values and terminal in one view. |
+| Logger: Send Program and Run | Sends the open program to `CPU:`, compiles and runs it, reports the compile result. Also the upload button in the editor title bar. |
+| Logger: Collect Table... | Collects a table to a TOA5 `.dat`, CSV or JSON Lines file. |
+| Logger: Select Logger, Show Station Info, Stop Program (keep data), Resume Program, Set Clock to UTC | As named. |
+
+Settings: `openloggernet.command` (how `oln` is run; default: the uv tool install's `oln`, else `oln`
+on PATH) and `openloggernet.port` (serial port, e.g. `COM5` or `/dev/ttyACM0`; empty: the selected
+or only attached logger). Only one program can hold a logger's port, so disconnect LoggerNet first.
+These commands change what runs on a real datalogger; use them with care.
+
+## Limitations
+
+- Tested and claimed for macOS only; Windows and Linux are untested. See the
+  [user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md)
+  for tested revisions.
+- Checks run only on programs the reference compiler accepts. opencrbasic does not replace Campbell's compiler.
+- Workspace entries default to `*.CR6` files; set `opencrbasic.entries` for other extensions.
+- Not available in untrusted workspaces.
+
+## Development and releases
 
 ```bash
 npm ci
 npm run lint
 npm test
-uvx pre-commit install   # lint, compile and file hygiene before each commit
+npm run package   # writes opencrbasic-<version>.vsix
 ```
 
-`npm run lint` runs ESLint with typescript-eslint; `npm test` compiles (`tsc --strict`), then runs
-the `node:test` unit tests in `src/test/` for the modules that need no `vscode` import. They do not
-start VS Code.
+Press F5 in VS Code ("Run Extension") to launch a development host. `syntaxes/crbasic.tmLanguage.json`
+is generated by `tools/gen_grammar.py` in [open-crbasic](https://github.com/UtrechtUniversity/open-crbasic);
+do not edit it by hand. Releases publish to the Marketplace from `main` when the `version` in
+`package.json` is new. The extension version is independent of the opencrbasic package version.
+Issues: [GitHub issues](https://github.com/UtrechtUniversity/open-crbasic-vsix/issues).
 
-## Package and install
+## License
 
-```bash
-npm ci
-npm run package
-code --install-extension opencrbasic-<version>.vsix
-```
-
-`npm run package` type-checks, bundles the client and `vscode-languageclient` into one minified
-`dist/extension.js` with esbuild, then writes `opencrbasic-<version>.vsix` into this directory. The
-`.vsix` is git-ignored and must not be committed. The package holds `dist/extension.js`,
-`syntaxes/`, `language-configuration.json`, `package.json` and this README; `node_modules/`, `out/`,
-`src/`, the tests and `.vscode/` stay out.
-CI builds the same package on every push and publishes it to the Visual Studio Marketplace from
-`main` (see "Releasing").
-
-The package includes neither the Python server nor `oln`; the extension offers to install both with
-uv (see "Quick start" and "Logger actions").
-
-## Development launch
-
-1. Open this repository in VS Code and run `npm run bundle` (or `npm run watch`, which rebuilds
-   `dist/extension.js` with a source map on every change).
-2. Press F5 ("Run Extension"). This opens an Extension Development Host with no folder.
-3. Open a folder with CRBasic programs, then open a CRBasic file.
-
-When the interpreter imports `opencrbasic` from another checkout, for example a git worktree, set
-`opencrbasic.serverEnv` to `{"PYTHONPATH": "<checkout>/src"}`. Run
-`opencrbasic: Restart Server` after changing server code.
-
-## Settings
-
-Settings are declared in `package.json` and documented in section 3 of [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md). The ones that restart the server are
-`pythonPath`, `serverArgs` and `serverEnv`; the rest reach the running server without a restart.
-
-## Logger actions
-
-Backed by [open-loggernet](https://github.com/UtrechtUniversity/open-loggernet)'s `oln`, the
-extension talks to a Campbell logger attached by USB. Before the first logger action of a session it
-checks `oln --version`, and offers to install open-loggernet with uv (`uv tool install
-openloggernet`) when it is missing, or to upgrade it when it is older than the extension needs:
-
-| Command | What it does |
-|---|---|
-| Logger: Open Panel | Station info, clock, tables, files, live values and the logger's terminal in one view, in the manner of LoggerNet's Connect screen. |
-| Logger: Send Program and Run | Sends the open program to `CPU:`, has the logger compile and run it, and reports its compile result. Also the upload button in a CRBasic editor's title bar. |
-| Logger: Collect Table... | Collects a whole table to a TOA5 `.dat`, CSV or JSON Lines file. |
-| Logger: Select Logger, Show Station Info, Stop Program, Resume Program, Set Clock to UTC | As named. |
-
-`openloggernet.command` sets how `oln` is run (default: the uv tool install's `oln`, else `oln` on
-PATH); `openloggernet.port` pins a
-serial port. Only one program can hold a logger's port, so disconnect LoggerNet first; the
-extension runs one `oln` call at a time and pauses a live watch while another call needs the port.
-
-## Highlighting and limitations
-
-- `syntaxes/crbasic.tmLanguage.json` is generated from the CR6 catalog by opencrbasic's
-  `tools/gen_grammar.py`, run in an open-crbasic checkout next to this one. Do not edit it by hand.
-- Tested and claimed for macOS only (VS Code 1.141.0), at the revisions in section 8 of [the user guide](https://github.com/UtrechtUniversity/open-crbasic/blob/main/docs/lsp-user-guide.md): language features, rename, formatting, quick fixes and
-  watched files including their visual checks, the packaged `.vsix`, inlay hints and the output
-  commands. Windows and Linux are untested and not claimed.
-
-## Releasing
-
-A push to `main` that passes CI publishes the extension to the Visual Studio Marketplace when the
-`version` in `package.json` has not been published yet (`vsce publish --skip-duplicate`); bump it
-with `npm version patch --no-git-tag-version` in the change to release. Publishing uses Marketplace
-Trusted Publishing (OIDC) from the `marketplace` GitHub environment; no token is stored. The extension's version is independent of
-the opencrbasic package version.
+[MIT](LICENSE).
