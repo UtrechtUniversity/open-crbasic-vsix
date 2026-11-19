@@ -535,9 +535,9 @@ export class LoggerService implements vscode.Disposable {
           const clock = await this.run<ClockInfo>(oln.clock(), target);
           this.lastInfo = info;
           this.views.station.set(stationNodes(info.port ?? target.port ?? '', info, clock, this.media));
-          void this.offerOsUpdate(info);
+          this.offerOsUpdate(info).catch((err: unknown) => this.notifyError(err));
           if (clockOutOfSync(clock.offset)) {
-            void this.offerClockSync(clock.offset);
+            this.offerClockSync(clock.offset).catch((err: unknown) => this.notifyError(err));
           }
           return;
         }
@@ -825,6 +825,12 @@ export class LoggerService implements vscode.Disposable {
 
   private post(message: Record<string, unknown>): void {
     void this.panel?.webview.postMessage(message);
+  }
+
+  // For actions started from a notification button: they run outside the command guard.
+  private notifyError(err: unknown): void {
+    this.report(err);
+    void vscode.window.showErrorMessage(`Logger: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   private report(err: unknown): void {
