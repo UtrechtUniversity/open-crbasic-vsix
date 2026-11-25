@@ -79,6 +79,7 @@ test('flash sends without compiling: the language server builds', () => {
 
 test('a build succeeds only on "Compiled in" without "Compile Failed"', () => {
   assert.equal(buildSucceeded('Main.CR6 -- Compiled in SequentialMode.'), true);
+  assert.equal(buildSucceeded('New.CR300 -- Compiled OK.'), true);
   assert.equal(buildSucceeded('bad.CR6 -- Compile Failed!\nline 4: Invalid expression'), false);
   assert.equal(buildSucceeded(''), false);
 });

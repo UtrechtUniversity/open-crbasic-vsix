@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import {
   CloseAction,
@@ -23,11 +24,15 @@ import {
   failureText,
   parseOutputQuery,
 } from './outputCommands';
+import { LOGGER_EXTENSIONS, crbcArgs, newProgramTemplate, runCrbc } from './editorTools';
+import { registerSidebar } from './sidebar';
 import {
   buildServerLaunch,
+  cargoCrbc,
   initializationOptions,
   MIN_SERVER_VERSION,
   olderThan,
+  resolveCrbcPath,
   resolvePythonPath,
   uvToolPython,
   type LaunchSettings,
@@ -52,9 +57,11 @@ const GUIDE_ACTION = 'Setup guide';
 const GUIDE_URL = 'https://github.com/UtrechtUniversity/open-crbasic-vsix#readme';
 
 let output: vscode.LogOutputChannel | undefined;
+let sidebarReload: (() => void) | undefined; // the side bar asks the new server again
 const lifecycle = new ClientLifecycle<LanguageClient>({
   create: createClient,
   afterStart: async (client) => {
+    sidebarReload?.();
     await applyTrace();
     void offerUpgrade(client.initializeResult?.serverInfo?.version);
   },
@@ -79,6 +86,13 @@ const outputProvider: vscode.TextDocumentContentProvider = {
       return '';
     }
     const command = OUTPUT_COMMANDS[target.kind];
+    if (target.kind === 'compilerOutput' && compilerChoice() === 'rust') {
+      try {
+        return await compileWithCrbc(vscode.Uri.parse(target.source, true));
+      } catch (err) {
+        return failureText(command, err);
+      }
+    }
     const current = lifecycle.client;
     if (!current || !current.isRunning()) {
       return failureText(command, 'The language server is not running.');
@@ -96,8 +110,28 @@ const outputProvider: vscode.TextDocumentContentProvider = {
   },
 };
 
-// The language server's compiler output for `uri`, for the Logger: Build commands.
-async function compileWithServer(uri: vscode.Uri): Promise<string> {
+// Runs a command of the language server (the side bar's requests).
+async function serverCommand(command: string, ...args: unknown[]): Promise<unknown> {
+  const current = lifecycle.client;
+  if (!current || !current.isRunning()) {
+    throw new Error('The CRBasic language server is not running.');
+  }
+  if (!current.initializeResult?.capabilities.executeCommandProvider?.commands?.includes(command)) {
+    throw new Error(`This needs a newer language server (${command}); upgrade opencrbasic.`);
+  }
+  return current.sendRequest(ExecuteCommandRequest.type, { command, arguments: args });
+}
+
+// `opencrbasic.compiler`: the Python compiler inside the language server, or the Rust `crbc`.
+function compilerChoice(): string {
+  return vscode.workspace.getConfiguration(SECTION).get<string>('compiler', 'python');
+}
+
+// The compiler output for `uri`, for the Logger: Build commands and Show Compiler Output.
+async function compile(uri: vscode.Uri): Promise<string> {
+  if (compilerChoice() === 'rust') {
+    return compileWithCrbc(uri);
+  }
   const current = lifecycle.client;
   if (!current || !current.isRunning()) {
     throw new Error('the CRBasic language server is not running, so the program cannot be built');
@@ -107,6 +141,51 @@ async function compileWithServer(uri: vscode.Uri): Promise<string> {
     arguments: [uri.toString()],
   });
   return typeof text === 'string' ? text : '';
+}
+
+// The Rust `crbc` reads the saved files, so an open program with unsaved changes is saved first.
+async function compileWithCrbc(uri: vscode.Uri): Promise<string> {
+  const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+  if (open?.isDirty && !(await open.save())) {
+    throw new Error(`${path.basename(uri.fsPath)} has unsaved changes and could not be saved`);
+  }
+  const config = vscode.workspace.getConfiguration(SECTION);
+  const command = resolveCrbcPath(config.get<string>('crbcPath', ''), cargoCrbc(process.env, process.platform, homedir()), existsSync);
+  const args = crbcArgs(config.get<string>('logger', 'auto'), uri.fsPath);
+  output?.info(`${command} ${args.join(' ')}`);
+  return runCrbc(command, args, path.dirname(uri.fsPath));
+}
+
+// The CodeLens command: the references of the declaration at `position`, in the peek view.
+async function showReferences(uri: string, position: { line: number; character: number }): Promise<void> {
+  const target = vscode.Uri.parse(uri, true);
+  const at = new vscode.Position(position.line, position.character);
+  const locations = await vscode.commands.executeCommand<vscode.Location[]>('vscode.executeReferenceProvider', target, at);
+  await vscode.commands.executeCommand('editor.action.showReferences', target, at, locations ?? []);
+}
+
+// Writes a new program for the chosen logger and opens it.
+async function newProgram(): Promise<void> {
+  const loggers = Object.keys(LOGGER_EXTENSIONS).map((logger) => ({
+    label: logger.toUpperCase(),
+    description: `${LOGGER_EXTENSIONS[logger]} program`,
+    logger,
+  }));
+  const choice = await vscode.window.showQuickPick(loggers, { placeHolder: 'Logger the program is for' });
+  if (!choice) {
+    return;
+  }
+  const extension = LOGGER_EXTENSIONS[choice.logger];
+  const folder = vscode.workspace.workspaceFolders?.[0]?.uri ?? vscode.Uri.file(homedir());
+  const target = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.joinPath(folder, `NewProgram${extension}`),
+    filters: { [`${choice.label} program`]: [extension.slice(1)] },
+  });
+  if (!target) {
+    return;
+  }
+  await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(newProgramTemplate(choice.logger)));
+  await vscode.window.showTextDocument(target);
 }
 
 async function openOutput(kind: OutputKind): Promise<void> {
@@ -132,6 +211,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     output,
     vscode.commands.registerCommand(`${SECTION}.restartServer`, () => restartClient()),
+    vscode.commands.registerCommand(`${SECTION}.showReferences`, showReferences),
+    vscode.commands.registerCommand(`${SECTION}.newProgram`, newProgram),
     vscode.workspace.registerTextDocumentContentProvider(OUTPUT_SCHEME, outputProvider),
     ...(Object.keys(OUTPUT_COMMANDS) as OutputKind[]).map((kind) =>
       vscode.commands.registerCommand(OUTPUT_COMMANDS[kind].clientCommand, () => openOutput(kind)),
@@ -153,7 +234,9 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
   );
-  registerLogger(context, output, compileWithServer);
+  registerLogger(context, output, compile);
+  const sidebar = registerSidebar(context, serverCommand);
+  sidebarReload = sidebar.reload;
   void restartClient();
 }
 
@@ -376,9 +459,9 @@ function readLaunchSettings(config: vscode.WorkspaceConfiguration): LaunchSettin
 
 function readServerSettings(config: vscode.WorkspaceConfiguration): ServerSettings {
   return {
-    entries: config.get<string[]>('entries', ['**/*.CR6']),
+    entries: config.get<string[]>('entries', ['**/*.{CR6,CR1X,CR300,CR350}']),
     exclude: config.get<string[]>('exclude', []),
-    logger: config.get<string>('logger', 'cr6'),
+    logger: config.get<string>('logger', 'auto'),
     encoding: config.get<string>('encoding', 'utf-8'),
     debounceMs: config.get<number>('debounceMs', 300),
     analysisTimeoutMs: config.get<number>('analysisTimeoutMs', 10000),
@@ -387,5 +470,8 @@ function readServerSettings(config: vscode.WorkspaceConfiguration): ServerSettin
     maxCacheMb: config.get<number>('maxCacheMb', 256),
     helpDirectory: config.get<string>('helpDirectory', ''),
     inlayHints: { parameterNames: config.get<boolean>('inlayHints.parameterNames', true) },
+    unusedHints: config.get<boolean>('unusedHints', true),
+    codeLens: { references: config.get<boolean>('codeLens.references', true) },
+    caseCorrection: config.get<boolean>('caseCorrection', true),
   };
 }

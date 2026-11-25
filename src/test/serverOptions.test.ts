@@ -4,6 +4,8 @@ import {
   buildServerLaunch,
   findUv,
   initializationOptions,
+  cargoCrbc,
+  resolveCrbcPath,
   olderThan,
   parseOlnVersion,
   resolveOlnCommand,
@@ -57,6 +59,9 @@ test('initializationOptions picks only the server keys', () => {
     maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
     inlayHints: { parameterNames: false },
+    unusedHints: false,
+    codeLens: { references: false },
+    caseCorrection: true,
   });
   assert.deepEqual(options, {
     entries: ['**/*.CR6'],
@@ -70,6 +75,9 @@ test('initializationOptions picks only the server keys', () => {
     maxCacheMb: 64,
     helpDirectory: '../extracted_chm',
     inlayHints: { parameterNames: false },
+    unusedHints: false,
+    codeLens: { references: false },
+    caseCorrection: true,
   });
 });
 
@@ -86,6 +94,9 @@ test('initializationOptions drops client-only keys and copies lists', () => {
     maxCacheMb: 256,
     helpDirectory: '',
     inlayHints: { parameterNames: true },
+    unusedHints: true,
+    codeLens: { references: true },
+    caseCorrection: true,
     pythonPath: 'python3',
     serverArgs: ['-m', 'opencrbasic.lsp'],
   };
@@ -94,7 +105,9 @@ test('initializationOptions drops client-only keys and copies lists', () => {
   assert.equal('serverArgs' in options, false);
   options.entries.push('b.CR6');
   options.inlayHints.parameterNames = false;
+  options.codeLens.references = false;
   assert.deepEqual(input.entries, ['a.CR6']);
+  assert.equal(input.codeLens.references, true);
   assert.equal(input.inlayHints.parameterNames, true);
 });
 
@@ -164,4 +177,13 @@ test('parseOlnVersion reads `oln --version` and nothing else', () => {
   assert.equal(parseOlnVersion('oln 0.3.1.dev4'), '0.3.1.dev4');
   assert.equal(parseOlnVersion('usage: oln [-h] ...'), undefined);
   assert.equal(parseOlnVersion(''), undefined);
+});
+
+test('the Rust crbc is looked for where cargo install puts it, then on PATH', () => {
+  assert.equal(cargoCrbc({}, 'linux', '/home/u'), '/home/u/.cargo/bin/crbc');
+  assert.equal(cargoCrbc({ CARGO_HOME: '/opt/cargo' }, 'darwin', '/Users/u'), '/opt/cargo/bin/crbc');
+  assert.equal(cargoCrbc({}, 'win32', 'C:\\Users\\u'), 'C:\\Users\\u\\.cargo\\bin\\crbc.exe');
+  assert.equal(resolveCrbcPath(' /x/crbc ', '/c/crbc', () => true), '/x/crbc');
+  assert.equal(resolveCrbcPath('', '/c/crbc', () => true), '/c/crbc');
+  assert.equal(resolveCrbcPath('', '/c/crbc', () => false), 'crbc');
 });

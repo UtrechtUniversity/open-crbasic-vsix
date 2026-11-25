@@ -39,9 +39,25 @@ The language server is the `opencrbasic` Python package with its `lsp` extra, wh
 - Diagnostics from the opencrbasic checker, hover, completion, signature help, outline, folding,
   navigation, semantic tokens, rename, formatting, quick fixes.
 - Parameter-name inlay hints (needs `opencrbasic.helpDirectory`).
+- Reference counts above declarations (click to list them), and declarations nothing uses shown
+  faded while the program has no errors.
+- Case correction as you type: a name takes its declaration's spelling, a keyword, data type or
+  instruction its conventional one (`beginprog` becomes `BeginProg`). It uses `editor.formatOnType`,
+  which the extension turns on for CRBasic.
+- Each program is analysed for the logger its extension names (`.CR6`, `.CR1X`, `.CR300`,
+  `.CR350`), unless `logger` names one.
+- Indentation as you type after block keywords (`BeginProg`, `Scan`, `If … Then`, `For`,
+  `DataTable`, …), and `Ctrl+'` / `Ctrl+Shift+'` (`Cmd` on macOS) to comment and uncomment lines.
+- **CRBasic** side bar: **Instructions** (the instructions and functions of the active program's
+  logger; search, filter by kind, insert with a tab stop per required parameter, help),
+  **Instruction Help** (the help for the instruction under the cursor, as in hover) and **Data
+  Tables** (each table's interval and fields as the compiler builds them; click a table to go to it).
+- **CRBasic: New Program...** (also under *File › New File...*): a small program for the chosen
+  logger, saved with that logger's extension.
 - Commands: `opencrbasic: Restart Server`, `opencrbasic: Show Compiler Output`,
   `opencrbasic: Show Table Fields`.
-- File types: `.CR6`, `.crb`, `.CR1X`, `.CR300`, `.CR350` (any case).
+- File types: `.CR6`, `.crb`, `.CR1X`, `.CR300`, `.CR350`, `.dld` (any case). The reference compilers
+  do not accept a `.dld` include, so a `.dld` is highlighted but is neither an entry nor a library.
 - Optional logger commands, see below.
 
 ## Settings
@@ -54,9 +70,9 @@ rest apply live):
 | `pythonPath` | `python3` | Interpreter that runs the server. Unset: the uv tool install's interpreter if present. |
 | `serverArgs` | `["-m", "opencrbasic.lsp"]` | Arguments passed to the interpreter. |
 | `serverEnv` | `{}` | Extra environment variables for the server (e.g. `PYTHONPATH` for a dev checkout). |
-| `entries` | `["**/*.CR6"]` | Workspace-relative globs of entry programs, analyzed with their includes. |
+| `entries` | `["**/*.{CR6,CR1X,CR300,CR350}"]` | Workspace-relative globs of entry programs, analyzed with their includes. |
 | `exclude` | `[]` | Globs removed from the entries. |
-| `logger` | `cr6` | Logger profile: `cr6`, `cr1000x`, `cr300`, `cr350`. |
+| `logger` | `auto` | Logger profile: `auto` (each program's from its extension), or `cr6`, `cr1000x`, `cr300`, `cr350` for every program. |
 | `encoding` | `utf-8` | Text encoding for files and unsaved content. |
 | `debounceMs` | `300` | Delay after the last edit before analysis. |
 | `analysisTimeoutMs` | `10000` | Per-analysis time limit. |
@@ -67,6 +83,11 @@ rest apply live):
 | `coverageNotices` | `false` | Hints where the reference compiler has rules opencrbasic does not model. |
 | `helpDirectory` | `""` | Directory with extracted CRBasic help (`Instructions/*.htm`, `parameters/*.htm`). Empty: no help text in hover and signature help. |
 | `inlayHints.parameterNames` | `true` | Parameter-name hints; needs `helpDirectory`. |
+| `unusedHints` | `true` | Fade declarations nothing uses. |
+| `codeLens.references` | `true` | Reference counts above declarations. |
+| `caseCorrection` | `true` | Respell the name just typed. |
+| `compiler` | `python` | Compiler for Logger: Build and Show Compiler Output: `python` (the language server, unsaved text included) or `rust` ([open-crbasic-rs](https://github.com/UtrechtUniversity/open-crbasic-rs) `crbc`, run on the saved file). Diagnostics always come from the server. |
+| `crbcPath` | `""` | The Rust `crbc`. Empty: Cargo's bin directory (`cargo install opencrbasic`), else `crbc` on PATH; the Python package installs a `crbc` too. |
 | `trace.server` | `off` | `off`, `messages` or `verbose` client-server trace in the output channel. |
 
 The extension does not ship Campbell's help files; point `helpDirectory` at your own extracted copy.

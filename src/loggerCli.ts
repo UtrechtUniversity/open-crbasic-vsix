@@ -201,9 +201,10 @@ export function describeTarget(target: LoggerTarget): string {
   return target.port ?? target.model ?? 'the attached logger';
 }
 
-// The language server's compiler output (CR6Comp's wording) reports a compiled program.
+// The compiler output reports a compiled program: CR6Comp/CR1000XComp say "Compiled in <mode>",
+// CR300Comp/CR350Comp "Compiled OK.".
 export function buildSucceeded(output: string): boolean {
-  return /Compiled in/.test(output) && !/Compile Failed/i.test(output);
+  return /Compiled (in|OK)/.test(output) && !/Compile Failed/i.test(output);
 }
 
 // A clock this far off the host's UTC is offered a sync.

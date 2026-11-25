@@ -5,10 +5,10 @@ import { join } from 'node:path';
 
 const manifest = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf8'));
 
-test('unlimited hint length defaults apply only to the contributed CRBasic language', () => {
+test('editor defaults (unlimited hint length, case correction on type) apply only to CRBasic', () => {
   const language = manifest.contributes.languages[0].id;
   assert.deepEqual(manifest.contributes.configurationDefaults, {
-    [`[${language}]`]: { 'editor.inlayHints.maximumLength': 0 },
+    [`[${language}]`]: { 'editor.inlayHints.maximumLength': 0, 'editor.formatOnType': true },
   });
 });
 
@@ -20,7 +20,7 @@ test('Restricted Mode explains why the extension needs Workspace Trust', () => {
 
 test('every icon the manifest names exists, in a light and a dark variant', () => {
   const root = join(__dirname, '../..');
-  const paths: string[] = [manifest.contributes.viewsContainers.activitybar[0].icon];
+  const paths: string[] = manifest.contributes.viewsContainers.activitybar.map((c: { icon: string }) => c.icon);
   for (const entry of [...manifest.contributes.commands, ...manifest.contributes.languages]) {
     if (entry.icon && typeof entry.icon === 'object') {
       paths.push(entry.icon.light, entry.icon.dark);

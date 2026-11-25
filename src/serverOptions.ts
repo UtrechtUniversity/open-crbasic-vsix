@@ -25,6 +25,9 @@ export interface ServerSettings {
   maxCacheMb: number;
   helpDirectory: string;
   inlayHints: { parameterNames: boolean };
+  unusedHints: boolean;
+  codeLens: { references: boolean };
+  caseCorrection: boolean;
 }
 
 export function buildServerLaunch(cfg: LaunchSettings, baseEnv: NodeJS.ProcessEnv): LaunchCommand {
@@ -117,7 +120,22 @@ export function initializationOptions(cfg: ServerSettings): ServerSettings {
     maxCacheMb: cfg.maxCacheMb,
     helpDirectory: cfg.helpDirectory,
     inlayHints: { parameterNames: cfg.inlayHints.parameterNames },
+    unusedHints: cfg.unusedHints,
+    codeLens: { references: cfg.codeLens.references },
+    caseCorrection: cfg.caseCorrection,
   };
+}
+
+// `crbc` of `cargo install opencrbasic` (open-crbasic-rs): $CARGO_HOME/bin, else ~/.cargo/bin.
+export function cargoCrbc(env: NodeJS.ProcessEnv, platform: NodeJS.Platform, home: string): string {
+  const p = platform === 'win32' ? path.win32 : path.posix;
+  return p.join(env.CARGO_HOME ?? p.join(home, '.cargo'), 'bin', platform === 'win32' ? 'crbc.exe' : 'crbc');
+}
+
+// A crbcPath the user set wins; otherwise Cargo's install if present, else `crbc` on PATH. Python's
+// opencrbasic installs a `crbc` too, and both print the same version line, so PATH is the last resort.
+export function resolveCrbcPath(configured: string, cargo: string, exists: (file: string) => boolean): string {
+  return configured.trim() || (exists(cargo) ? cargo : 'crbc');
 }
 
 // The oldest server this extension's grammar and features expect (opencrbasic 1.1.0: macros).

@@ -3,17 +3,56 @@
     "lineComment": "'"
   },
   "brackets": [
-    ["(", ")"],
-    ["{", "}"]
+    [
+      "(",
+      ")"
+    ],
+    [
+      "{",
+      "}"
+    ]
   ],
   "autoClosingPairs": [
-    { "open": "(", "close": ")" },
-    { "open": "{", "close": "}" },
-    { "open": "\"", "close": "\"", "notIn": ["string"] }
+    {
+      "open": "(",
+      "close": ")"
+    },
+    {
+      "open": "{",
+      "close": "}"
+    },
+    {
+      "open": "\"",
+      "close": "\"",
+      "notIn": [
+        "string",
+        "comment"
+      ]
+    }
   ],
   "surroundingPairs": [
-    ["(", ")"],
-    ["{", "}"],
-    ["\"", "\""]
-  ]
+    [
+      "(",
+      ")"
+    ],
+    [
+      "{",
+      "}"
+    ],
+    [
+      "\"",
+      "\""
+    ]
+  ],
+  "wordPattern": "#?[A-Za-z_][A-Za-z0-9_]*\\$?|-?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?",
+  "indentationRules": {
+    "increaseIndentPattern": {
+      "pattern": "^\\s*(?:BeginProg\\b|Scan\\s*\\(|SubScan\\s*\\(|SlowSequence\\b|DataTable\\s*\\(|ConstTable\\b|StructureType\\b|(?:Sub|Function)\\s+\\w|(?:Else)?If\\b.*\\bThen\\s*(?:'.*)?$|Else\\s*(?:'.*)?$|For\\b|Do\\b|While\\b|Select\\s+Case\\b|Case\\b|DisplayMenu\\b|SubMenu\\b|WebPageBegin\\b|#If(?:Def|NotDef)?\\b|#Else(?:If)?\\b)",
+      "flags": "i"
+    },
+    "decreaseIndentPattern": {
+      "pattern": "^\\s*(?:EndProg\\b|NextScan\\b|NextSubScan\\b|EndSequence\\b|EndTable\\b|EndConstTable\\b|EndStructureType\\b|End\\s*(?:If|Sub|Function|Select)\\b|Else(?:If)?\\b|Next\\b|Loop\\b|Wend\\b|Case\\b|EndMenu\\b|EndSubMenu\\b|WebPageEnd\\b|#Else(?:If)?\\b|#EndIf\\b)",
+      "flags": "i"
+    }
+  }
 }

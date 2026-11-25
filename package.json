@@ -32,7 +32,8 @@
   "contributes": {
     "configurationDefaults": {
       "[crbasic]": {
-        "editor.inlayHints.maximumLength": 0
+        "editor.inlayHints.maximumLength": 0,
+        "editor.formatOnType": true
       }
     },
     "languages": [
@@ -51,7 +52,9 @@
           ".CR300",
           ".cr300",
           ".CR350",
-          ".cr350"
+          ".cr350",
+          ".DLD",
+          ".dld"
         ],
         "configuration": "./language-configuration.json",
         "icon": {
@@ -79,6 +82,50 @@
       {
         "command": "opencrbasic.openTableFields",
         "title": "opencrbasic: Show Table Fields"
+      },
+      {
+        "command": "opencrbasic.newProgram",
+        "title": "CRBasic: New Program...",
+        "shortTitle": "CRBasic Program"
+      },
+      {
+        "command": "opencrbasic.showReferences",
+        "title": "opencrbasic: Show References"
+      },
+      {
+        "command": "opencrbasic.instructions.search",
+        "title": "Search Instructions",
+        "icon": "$(search)"
+      },
+      {
+        "command": "opencrbasic.instructions.filter",
+        "title": "Filter Instructions",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "opencrbasic.instructions.clearFilter",
+        "title": "Clear Filter",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "opencrbasic.instructions.refresh",
+        "title": "Refresh Instructions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "opencrbasic.instructions.insert",
+        "title": "Insert Instruction",
+        "icon": "$(add)"
+      },
+      {
+        "command": "opencrbasic.instructions.help",
+        "title": "Show Instruction Help",
+        "icon": "$(question)"
+      },
+      {
+        "command": "opencrbasic.dataTables.refresh",
+        "title": "Refresh Data Tables",
+        "icon": "$(refresh)"
       },
       {
         "command": "openloggernet.openPanel",
@@ -310,7 +357,7 @@
             "type": "string"
           },
           "default": [
-            "**/*.CR6"
+            "**/*.{CR6,CR1X,CR300,CR350}"
           ],
           "description": "Workspace-relative glob patterns of entry programs. Each entry is analyzed with its includes."
         },
@@ -325,13 +372,21 @@
         "opencrbasic.logger": {
           "type": "string",
           "enum": [
+            "auto",
             "cr6",
             "cr1000x",
             "cr300",
             "cr350"
           ],
-          "default": "cr6",
-          "description": "Logger profile used to analyze entry programs."
+          "default": "auto",
+          "enumDescriptions": [
+            "Each program's logger from its extension: .CR6, .CR1X, .CR300, .CR350.",
+            "CR6",
+            "CR1000X",
+            "CR300",
+            "CR350"
+          ],
+          "description": "Logger profile used to analyze and build entry programs. `auto` takes it from each program's extension, as `crbc` does; a fixed logger applies to every program and only its own extension (and .CR6) makes a file an entry."
         },
         "opencrbasic.encoding": {
           "type": "string",
@@ -396,6 +451,39 @@
           "type": "boolean",
           "default": true,
           "description": "Show the parameter name before each argument of an instruction or function call (for example Dest: before the first VoltSe argument). It needs helpDirectory: with no help text there are no hints."
+        },
+        "opencrbasic.unusedHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fade variables, constants, tables, subroutines and functions that nothing in the program uses (only while the program has no errors)."
+        },
+        "opencrbasic.codeLens.references": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the number of references above each declaration; click it to list them."
+        },
+        "opencrbasic.caseCorrection": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Respell a name as you type to its declaration's spelling, or to the conventional spelling of a keyword, data type or instruction (`beginprog` becomes `BeginProg`). Needs `editor.formatOnType`, which this extension turns on for CRBasic."
+        },
+        "opencrbasic.compiler": {
+          "type": "string",
+          "enum": [
+            "python",
+            "rust"
+          ],
+          "default": "python",
+          "enumDescriptions": [
+            "The Python compiler inside the language server; compiles unsaved changes too.",
+            "The Rust `crbc` of open-crbasic-rs; saves the program first."
+          ],
+          "description": "Compiler for Logger: Build and Show Compiler Output. Diagnostics always come from the language server."
+        },
+        "opencrbasic.crbcPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The Rust `crbc` for `opencrbasic.compiler: rust`. Empty: `crbc` in Cargo's bin directory (`cargo install opencrbasic`), else `crbc` on PATH, which may be the Python one."
         },
         "opencrbasic.trace.server": {
           "type": "string",
@@ -479,6 +567,18 @@
         {
           "command": "openloggernet.disconnect",
           "when": "openloggernet.connected"
+        },
+        {
+          "command": "opencrbasic.showReferences",
+          "when": "false"
+        },
+        {
+          "command": "opencrbasic.instructions.insert",
+          "when": "false"
+        },
+        {
+          "command": "opencrbasic.instructions.help",
+          "when": "false"
         }
       ],
       "editor/title": [
@@ -565,6 +665,31 @@
           "command": "openloggernet.scan.settings",
           "when": "view == openloggernet.settings && openloggernet.filled.settings",
           "group": "navigation"
+        },
+        {
+          "command": "opencrbasic.instructions.search",
+          "when": "view == opencrbasic.instructions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "opencrbasic.instructions.filter",
+          "when": "view == opencrbasic.instructions",
+          "group": "navigation@2"
+        },
+        {
+          "command": "opencrbasic.instructions.clearFilter",
+          "when": "view == opencrbasic.instructions",
+          "group": "navigation@3"
+        },
+        {
+          "command": "opencrbasic.instructions.refresh",
+          "when": "view == opencrbasic.instructions",
+          "group": "navigation@4"
+        },
+        {
+          "command": "opencrbasic.dataTables.refresh",
+          "when": "view == opencrbasic.dataTables",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -627,6 +752,22 @@
           "command": "openloggernet.editSetting",
           "when": "view == openloggernet.settings && viewItem =~ /^setting$/",
           "group": "inline"
+        },
+        {
+          "command": "opencrbasic.instructions.insert",
+          "when": "view == opencrbasic.instructions && viewItem == instruction",
+          "group": "inline@1"
+        },
+        {
+          "command": "opencrbasic.instructions.help",
+          "when": "view == opencrbasic.instructions && viewItem == instruction",
+          "group": "inline@2"
+        }
+      ],
+      "file/newFile": [
+        {
+          "command": "opencrbasic.newProgram",
+          "group": "file"
         }
       ]
     },
@@ -636,6 +777,11 @@
           "id": "openloggernet",
           "title": "Logger",
           "icon": "media/logger.svg"
+        },
+        {
+          "id": "crbasic",
+          "title": "CRBasic",
+          "icon": "media/crbasic.svg"
         }
       ]
     },
@@ -662,6 +808,21 @@
           "name": "Device Settings",
           "visibility": "collapsed"
         }
+      ],
+      "crbasic": [
+        {
+          "id": "opencrbasic.instructions",
+          "name": "Instructions"
+        },
+        {
+          "id": "opencrbasic.instructionHelp",
+          "name": "Instruction Help",
+          "type": "webview"
+        },
+        {
+          "id": "opencrbasic.dataTables",
+          "name": "Data Tables"
+        }
       ]
     },
     "viewsWelcome": [
@@ -684,6 +845,28 @@
       {
         "view": "openloggernet.settings",
         "contents": "The logger's device settings, read and changed by name.\n[$(search) Scan](command:openloggernet.scan.settings)"
+      },
+      {
+        "view": "opencrbasic.instructions",
+        "contents": "Open a CRBasic program to list the instructions and functions of its logger.\n[New Program...](command:opencrbasic.newProgram)"
+      },
+      {
+        "view": "opencrbasic.dataTables",
+        "contents": "Open a CRBasic program to see the data tables it defines: each table's interval and fields, as the compiler builds them."
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "editor.action.addCommentLine",
+        "key": "ctrl+'",
+        "mac": "cmd+'",
+        "when": "editorLangId == crbasic && editorTextFocus && !editorReadonly"
+      },
+      {
+        "command": "editor.action.removeCommentLine",
+        "key": "ctrl+shift+'",
+        "mac": "cmd+shift+'",
+        "when": "editorLangId == crbasic && editorTextFocus && !editorReadonly"
       }
     ]
   },
